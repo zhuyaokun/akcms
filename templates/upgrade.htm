@@ -1,0 +1,28 @@
+<{include file="admincp_header.htm"}>
+<script>
+function checkagree() {
+	if($("#agree").attr("checked") == true || $("#agree").attr("checked") == "checked") {
+		document.location = "index.php?file=upgrade&to=<{$to}>&vc=<{$vc}>";
+	} else {
+		alert("<{$lan.mustagree}>");
+		$("#agree").focus();
+	}
+}
+</script>
+<base target="_blank">
+<body>
+<div class="block"></div>
+<table cellspacing="1" cellpadding="4" class="commontable width100">
+	<tr class="header">
+		<td><{$lan.upgrade}></td>
+	</tr>
+	<tr>
+		<td>
+			<iframe scrolling="no" frameborder="0" style="height:260px;width:100%;" src="http://www.akhtm.com/license/update.htm"></iframe>
+			&nbsp;<{$lan.sqlitecannotupdate}><br />
+			<input type="checkbox" id="agree" value="1"><label for="agree"><{$lan.agree}></label><center><input type="button" value="<{$lan.next}>" onclick="checkagree()"></center>
+		</td>
+	</tr>
+</table>
+</body>
+</html>

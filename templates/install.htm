@@ -1,0 +1,373 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<{include file="head.htm" title=$themename startinstall=1}>
+
+<body>
+<style type='text/css'>
+.install-warp{width:958px;margin:0px auto;margin-top:30px;border:1px solid #ccc;background:#F8F8F8;height:488px;height:452px;overflow:hidden;}
+.license, .warp{width:900px;margin:0px auto;}
+.switch{display:none;}
+.install-title h3{font-size:14px;font-weight:bold;height:45px;line-height:45px;padding-left:10px;}
+.install-content{height:35px;padding-left:10px;}
+.install-step{padding-left: 17px;}
+.step-li{float:left;padding:0px;margin:0px;font-size:100%;padding-right:20px;height:35px;line-height:35px;list-style-position:inside;}
+.stepcurrent{font-size:14px;font-weight:bold;color:#ff0000}
+.completestep{font-size:14px;font-weight:bold;}
+
+.database, .license-warp, .other-settings, .install-progress, .install-complete{margin-top:10px;padding-top:10px;height:326px;height:290px;border-bottom:1px #E6E6E6 solid;border-top:1px solid #E6E6E6;padding-top:10px;padding-bottom:10px;display:none;}
+.database{position:relative;}
+.license-warp{display:block;}
+.select-other-db{position:absolute;top:10px;right:10px;}
+
+.select_content, .inputinfo table{margin-left:320px;}
+.install-bottom{height:35px;position:relative;padding-top:15px;}
+.core{float:left;}
+.step-btn{float:right;}
+.step-btn ul,.step-btn ul li{list-style:none;}
+.step-btn ul li{float:left;1height:22px;1background:#ccc;1width:50px;text-align:center;margin-left:10px;}
+.step-btn ul li a{display:inline-block;line-height:20px;height:20px;padding-top:1px\0;}
+
+.install-progress-tip{border:1px solid #9b9b9b;height:230px;height:215px;margin-top:10px;padding:3px;overflow-y:scroll;}
+.install-progress-tip p{line-height:20px;font-size:12px;}
+#dbtype,#dbtype li{list-style:none;text-align: left;padding-left: 10px;}
+tr{height:30px;}
+tr input{height:20px;line-height:20px;width:160px;}
+.warp div p{font-size:12px;line-height:17px;}
+#thtip{font-size:15px;font-weight:bold;color:#ff0f0f;}
+#oneh1{font-size:14px;font-weight:bold;margin-top:12px;margin-bottom:3px;}
+.path{font-size:12px;}
+</style>
+<noscript>
+	<{$lan.noscripttip}>
+</noscript>
+	<div class='install-warp'>
+		<div class='install-title'><h3><{$themename}><{$lan.sysinstallguide}></h3></div>
+		<div class='install-content'>
+			<ol class='install-step'>
+				<li class='step-li'><{$lan.licenseagreement}></li>
+				<li class='step-li'><{$lan.dbsettings}></li>
+				<li class='step-li'><{$lan.install}></li>
+				<li class='step-li'><{$lan.complete}></li>
+			</ol>
+		</div>
+		<div class='switch license-warp'>
+			<div class='warp license'>
+				<div style="height:44px;color:red;"><{$checkinstallpath}> <a href="index.php?file=install&action=movedir">[<{$lan.movesubdir}>]</a></div>
+				<iframe scrolling="no" frameborder="0" style="height:210px;width:100%;" src="http://www.akhtm.com/license/install.htm"></iframe>
+				<div id='isagree-license'>
+					<{$lan.offlinelicense}>(<a href='http://www.akhtm.com/license/install.htm' target='_blank'>http://www.akhtm.com/license/install.htm</a>)<br />
+					<input type="checkbox" id="agree" value="1" checked="checked" />
+					<label for="agree"><{$lan.agree}></label>
+				</div>
+			</div>
+		</div>
+		<div class='switch database'>
+			<div class='select-other-db'>
+				<a href='javascript:;'><{$lan.currentdbtype}>(<span id="currentdbtype">MySQL</span>) <{$lan.selectotherdbtype}></a>
+				<!--start:choosedbtype-->
+				<div class='select-db' style='display:none;'>
+					<div class='select_contents'>
+						<select id="dbtype" size="10">
+							<{$drivers}>
+						</select>
+					</div>
+				</div>
+				<!--end:choosedbtype-->
+			</div>
+			<!--start:sqlite-->
+			<div class='sqliteinfo warp inputinfo' style='margin-top:40px;display:none;'>
+				<table>
+					<tr>
+						<td><{$lan.dbname}></td>
+						<td><input name="dbname" type="text" id="sqlitedbname" value="<{$sqlitedbname}>" class="mustoffer sqliteoffer" size="30" /></td>
+					</tr>
+					<tr>
+						<td><{$lan.tablepre}></td>
+						<td><input name="tablepre" type="text" id="sqlitetablepre" value="ak" class="mustoffer sqliteoffer" size="10" /></td>
+					</tr>
+					<tr>
+						<td><{$lan.charset}></td>
+						<td id="sqlitecharset"></td>
+					</tr>
+				</table>
+			</div>
+			<!--end:sqllite-->
+			<!--start:mysql-->
+			<div class='mysqlinfo inputinfo' style='margin-top:40px;'>
+				<table>
+					<tr>
+						<td><{$lan.dbhost}></td>
+						<td><input name="dbhost" type="text" id="mysqldbhost" value="localhost" class="mustoffer mysqloffer" /></td>
+					</tr>
+					<tr>
+						<td><{$lan.dbuser}></td>
+						<td><input name="dbuser" type="text" id="mysqldbuser" class="mustoffer mysqloffer" value="root" /></td>
+					</tr>
+					<tr>
+						<td><{$lan.dbpw}></td>
+						<td><input name="dbpw" type="password" id="mysqldbpw" class="mustoffer mysqloffer" value="" /></td>
+					</tr>
+					<tr>
+						<td><{$lan.dbname}></td>
+						<td><input name="dbname" type="text" id="mysqldbname" class="mustoffer mysqloffer" value="" /></td>
+					</tr>
+					<tr>
+						<td><{$lan.tablepre}></td>
+						<td><input name="tablepre" type="text" id="mysqltablepre" value="ak" class="mustoffer mysqloffer" /></td>
+					</tr>
+					<tr>
+						<td><{$lan.charset}></td>
+						<td id="mysqlcharset"><{$charsethtml}></td>
+					</tr>
+				</table>
+			</div>
+			<!--end:mysql-->
+		</div>
+
+		<div class='switch install-progress' style='display:none;'>
+			<div class='warp' style='margin-top:10px;'>
+				<div class='install-progress-bar'>					
+					<div style="border:1px solid #555;padding:1px;width:100%;height:15px;background:#FFF;">
+						<div id="processdiv" style="width:0px;background:#9EB6D8;height:15px;"></div>
+					</div>
+					<div style='width:150px;float:right;text-align:right;margin-top:10px;'>
+						<{$lan.finished}> <span id="percentspan">0.00</span> %&nbsp;[<a href="javascript:document.location.reload();"><{$lan.refresh}></a>]</div>
+					<div style='width:445px;margin-top:10px;'><span id='step'></span><span id='title'></span></div>
+				</div>
+				<div style='clear:both;font-size:0px;line-height:0px;'></div>
+				<div class='install-progress-tip'></div>
+			</div>
+		</div>
+		<div class='switch install-complete' style='display:none;'>
+			<div class='warp'>
+				<div>
+					<p id='thtip'><{$sysname}><{$lan.properlysave}></p>
+					<h1 id='oneh1' style=''><{$lan.systeminfo}></h1>
+						<p><{$lan.faddr}><a class='path' href='<{$cfpath}>' target='_blank'><{$cfpath}></a></p>
+						<p><{$lan.cpaddr}><a class='path' href='<{$cppath}>' target='_blank'><{$cppath}></a></p>
+						<p><{$lan.cpadmin}>admin</p>
+						<p><{$lan.cppw}></p>
+				</div>
+				<div style='margin-top:12px;'>
+					<iframe name="mainFrame" src="http://www.akhtm.com/embed/installcomplete.htm" frameborder="0" scrolling="no" style="height:158px;width:100%;"></iframe>
+				</div>
+			</div>
+		</div>
+		<div class='warp install-bottom'>
+			<{if $hastheme}>
+				<p class='core'><{$themename}><a target='_blank' href='http://www.akhtm.com'><{$lan.basedon}>AKCMS<{$sysedition}><{$lan.kernel}></a></p>
+			<{/if}>
+			<div class='step-btn'>
+				<ul class='step-btn-con'>
+					<li class='next'>
+						<button onclick='return false;'><{$lan.next}></button>
+						<!--<a href='javascript:;'><{$lan.next}></a>-->
+					</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	<input type="hidden" id='timediff' name="timedifference" class="mustoffer" value="<{$timedifference}>" />
+<script type='text/javascript'>
+var totalstep = '';
+var currentstep = 0;
+var custominstall = 0;
+var PostData = new Object();
+$(document).ready(function(){
+	var dateline = Math.round(new Date().getTime()/1000);
+	var df = Math.round((dateline - <{php}>echo time();<{/php}>) / 3600) + 8;
+	PostData.timedifference = df;
+	$("#timediff").val(df);
+	$(".next button").unbind("click").bind("click", function(){nextclickcontrol();});
+	$(".select-other-db a").click(function(){
+		$(".select-db").show();
+		document.getElementById("dbtype").size = $("#dbtype option").length;
+	});
+	$(".select-db").change(function(){
+		var databasetype = $(this).find('option:selected').val();
+		$("#currentdbtype").html($(this).find('option:selected').html());
+		$(".select-db").hide();
+		var charsethtml = "<{$charsethtml}>";
+		if(databasetype.indexOf('sqlite') !== -1) {
+			$(".sqliteinfo").show();
+			$(".mysqlinfo").hide();
+			$("#mysqlcharset").html('');
+			$("#sqlitecharset").html(charsethtml);
+		} else if(databasetype.indexOf('mysql') !== -1) {
+			$(".sqliteinfo").hide();
+			$(".mysqlinfo").show();
+			$("#mysqlcharset").html(charsethtml);
+			$("#sqlitecharset").html('');
+		}
+	});
+	insertcustomstep();
+	showstep(0);
+});
+
+function insertcustomstep() {
+	if($(".other-settings").length > 0) {
+		$(".step-li").eq(1).after("<li class='step-li'><{$lan.themename}><{$lan.set}></li>");
+	}
+	totalstep = $(".step-li").length;
+}
+function checkinstallprepare(data, pid) {
+	if(pid == 'checkdbconnect') {
+		if(data == "dbname") {
+			alert("<{$lan.dbnameerror}>");
+		}
+		if(data != "ok") {
+			alert("<{$lan.connecterror}>" + data);
+			return 'fail';
+		}
+	} else if(pid == 'prepareinstall') {
+		if(data == "ok") {
+			showstep(2);
+			install();
+		} else {
+			alert("<{$lan.error}>:" + data);
+		}
+	}
+	return;
+}
+
+function nextclickcontrol() {
+	if(currentstep == 0) {
+		if($("#agree").attr("checked") == true || $("#agree").attr("checked") == "checked") {
+			currentstep = 1;
+			showstep(currentstep);
+			return false;
+		} else {
+			alert('<{$lan.mustagree}>');
+		}
+	}
+	if(currentstep == 1) {
+		var trygoto = makesuredb();
+		if(trygoto != 'ok') {
+			alert(trygoto);
+			return false;
+		}
+		var one = {
+			api : 'index.php?file=install&action=checkdbconnect',
+			postdata : PostData,
+			id : 'checkdbconnect'
+		};
+		var two = {
+			api : 'index.php?file=install&action=prepareinstall',
+			postdata : PostData,
+			id : 'prepareinstall'
+		};
+		var arrs = [one, two];
+		serialrequest(arrs, checkinstallprepare);
+	}
+}
+
+function showstep(sindex) {
+	var that = $(".switch");
+	var _this = $(".switch").eq(sindex);
+	if(_this.length > 0) {
+		that.hide();
+		_this.show();
+	}
+	$(".next button").unbind("click").bind("click", function(){nextclickcontrol();});
+	
+	if(sindex == totalstep - 1) {
+		$(".next button").attr("disabled", true);
+		$(".next button").unbind('click');
+	}
+	$(".install-step li:gt("+ sindex +")").removeClass("stepcurrent").removeClass("completestep");
+	$(".install-step li:lt("+ sindex +")").removeClass("stepcurrent").addClass("completestep");
+	$(".install-step li").eq(sindex).addClass("stepcurrent");
+	
+	if(sindex == 3) {
+		$.get("index.php?file=install&action=finishlock");
+	}
+}
+
+function makesuredb() {
+	PostData.dbhost = ''; 
+	PostData.dbuser = '';
+	PostData.dbpw = '';
+	PostData.dbname = '';
+	PostData.tablepre = '';
+	var databasetype = $("#dbtype").find('option:selected').val();
+	if(databasetype === undefined) {
+		databasetype = "mysql";
+	}
+	PostData.dbtype = databasetype;
+	if(databasetype.indexOf('sqlite') !== -1) {
+		databasetype = "sqlite";
+	} else if(databasetype.indexOf('mysql') !== -1) {
+		databasetype = "mysql";
+	}
+	$("." + databasetype + "offer").each(function(i){
+		var key = $(this).attr("name");
+		PostData[key] = $(this).val();
+	});
+	var char = $("#charset").val();
+	if(char === undefined) {return 'ERROR!';}
+	PostData.charset = char;
+	if(databasetype == 'sqlite') {
+		if(PostData.dbname == '') {return '<{$lan.pleaseinputdbname}>';}
+	} else if(databasetype == 'mysql') {
+		if(PostData.dbhost == '') { return '<{$lan.pleaseinputdbhost}>';}
+		if(PostData.dbuser == '') {return '<{$lan.pleaseinputdbuser}>';}
+		if(PostData.dbname == '') {return '<{$lan.pleaseinputdbname}>';}
+	}
+	return 'ok';
+}
+
+function install() {
+	$(".next button").attr("disabled", true);
+	$(".next button").unbind('click');
+
+	var geturl = 'index.php?file=install&action=install&rand=' + Math.random();
+	var step = new Array();
+	for(var i = 0; i < 2; i++){
+		step[i] = i;
+	}
+	function runprocess() {
+		$.post(geturl, PostData,recall);
+	}
+	runprocess();
+	function recall(strers) {
+		var returnvalue = strers.split("\t");
+		var percent = returnvalue[0];
+		var stepid = returnvalue[1];
+		var title = returnvalue[2];
+		if(title != "") $("#title").html(title);
+		if(percent < 100 && percent >= 0) {
+			if(stepid <= step.length) {
+				installprocesstip(title);
+			}
+			$("#percentspan").html(percent);
+			$("#processdiv").width(percent + "%");
+		} else if(percent == 100){
+			$("#percentspan").html("100");
+			$("#processdiv").width("100%");
+			installprocesstip(title);
+			if(stepid == step.length) {
+				currentstep = totalstep - 1;
+				setTimeout('showstep('+ currentstep +')', 500);
+				installcomplete();
+				return true;
+			}
+		}
+		setTimeout(runprocess, 50);
+	}
+}
+
+function installprocesstip(title) {
+	$(".install-progress-tip").append("<p>" + title + "</p>");
+	var fht = $(".install-progress-tip").get(0).scrollHeight;
+	var ht = $(".install-progress-tip").get(0).clientHeight;
+	$(".install-progress-tip").scrollTop(fht - ht);
+}
+
+function installcomplete(){
+	$(".step-btn-con").empty().append('<li class="up"><button onclick="return false;"><{$lan.complete}></button></a></li>');
+	$(".up button").bind("click",function(){window.open("index.php");});
+}
+
+</script>
+</body>
+</html>

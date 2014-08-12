@@ -1,0 +1,34 @@
+<{include file="admincp_header.htm"}>
+<body>
+<div class="block"></div>
+<table cellspacing="1" align="center" cellpadding="4" class="commontable" style="width:288px;">
+	<tr class="header">
+		<td colspan="3"><{$lan.licensecenter}></td>
+	</tr>
+	<tr>
+		<td style="width:56px;"><{$lan.paylicense}></td>
+		<td id="paylicense"></td>
+	</tr>
+	<tr>
+		<td><{$lan.adlicense}></td>
+		<td id="adlicense"></td>
+	</tr>
+</table>
+<script language="javascript">
+$(function(){
+	$.get('index.php?file=license&action=checklicense',function(data){
+		if(data == "1") {
+			$("#paylicense").html("<span style='color:red'><{$lan.licensesuccess}></span> <a href='http://www.akhtm.com/akcms_license.php?key=<{$domain}>' target='_blank'><{$lan.licensecert}></a>");
+			$("#adlicense").text("-");
+		} else if(data == "2") {
+			$("#paylicense").html("<{$lan.nolicense}> <a href='http://www.akhtm.com/akcms_license.php?do=buy&domain=<{$domain}>' target='_blank'><{$lan.buylicense}></a>");
+			$("#adlicense").html("<span style='color:red'><{$lan.adlicensesuccess}></span> <a href='index.php?file=license&action=abandonad'><{$lan.abandonadlicense}></a>");
+		} else {
+			$("#paylicense").html("<{$lan.nolicense}> <a href='http://www.akhtm.com/akcms_license.php?do=buy&domain=<{$domain}>' target='_blank'><{$lan.buylicense}></a>");
+			$("#adlicense").html("<{$lan.nolicense}> <a href='index.php?file=license&action=applyad'><{$lan.applyadlicense}></a>");
+		}
+	});
+});
+</script>
+</body>
+</html>

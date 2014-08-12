@@ -1,0 +1,153 @@
+<{include file="admincp_xheader.htm"}>
+<script language="javascript">
+function resizebody() {
+	bodywidth = pageWidth() - <{$menuwidth}> - 4;
+	$("#bodyiframe").attr("width", bodywidth + "px");
+	bodyheight = pageHeight() - 25;
+	$("#bodyiframe").attr("height", bodyheight + "px");
+}
+
+function appendmessage() {
+	var delay;
+	var tipnum = messagearray.length;
+	if(!tipnum) return ;
+	$("#redtip").show();
+	$("#redtip").find("ul").empty();
+	for(var i=0; i<tipnum; i++) {
+		$("#redtip").find("ul").append("<li>"+messagearray[i]+"</li>");
+	}
+	i = null;
+	if(tipnum > 0) {
+		$("#tiptext").show();
+		$("#tiptexts").show();
+		$("#tiptext").text(tipnum);
+	}
+	$("#redtip").find("li").eq(0).css("margin-top","0px").css("border","none");
+	$("#tiptextcontent").toggle(function(){$("#zhongjie").show();},function(){$("#zhongjie").hide();});
+	$("#tiptextcontent").hover(function(){$("#zhongjie").show();},function(){
+							delay = setTimeout('$("#zhongjie").hide();', 500);
+						}
+	);
+	$("#redtipcontent").hover(function(){
+		$("#zhongjie").show();
+		clearTimeout(delay);
+		}, function(){$("#zhongjie").hide()});
+}
+
+function messagecalback(data) {
+	if(!data) return '';
+	var jsonobj = jQuery.parseJSON(data);
+	if(!jsonobj) return '';
+	if(jsonobj && jsonobj.length > 0) {
+		for(var i=0; i<jsonobj.length; i++) {
+			messagearray.push(jsonobj[i]);
+		}
+	}
+	appendmessage();
+}
+
+function loadcheckmessage() {
+	messagearray = new Array();
+	$.get('index.php?file=welcome&action=checkmessage&r='+Math.random(), messagecalback);
+}
+
+$(document).ready(function(){
+	resizebody();
+	$(window).resize(function() {
+		resizebody();
+	});
+	$("#nav li").click(function(){
+		id = this.id;
+		$('#c').hide();
+		$("#nav li").each(function(){
+			if(this.id == id) {
+				this.className = "current";
+			} else {
+				this.className = "";
+			}
+		});
+		$("#menu .menu_body").each(function(){
+			if(this.id == "menu_" + id) {
+				this.style.display = "block";
+			} else {
+				this.style.display = "none";
+			}
+		});
+	});
+	$("#menu a").click(function(){
+		var li = $(this).parent();
+		li.addClass("current");
+		var o = li.offset();
+		var w = li.css('width');
+		$('#c').css('left', (<{$menuwidth}> + 2) + 'px');
+		$('#c').css('top', o.top + 'px');
+		$('#c').css('z-index', '9');
+		$('#c').show();
+		li.prevAll().removeClass('current');
+		li.nextAll().removeClass('current');
+	});
+	$('#menu a').focus(function(){
+                if(this.blur){
+                        this.blur();
+                };
+        });
+        $("#nav li:first").click();
+	setTimeout("loadcheckmessage()", 100);
+});
+
+function jshook() {
+	$.get('index.php?file=admincp&action=jshook&r='+Math.random(), jshookcallback);
+}
+
+function jshookcallback(data) {
+	if(!data) return '';
+	eval(data);
+}
+</script>
+<base target="mainFrame">
+<body style="padding:0px;height:100%;overflow:hidden;" scroll="no">
+<div id="c"></div>
+	<div id="header">
+		<{if $customed}>
+			<div id="switchmode">
+				<{if $usermode eq "editor"}>
+					<a href='index.php?file=admincp&action=admin' target='_self'><{$lan.switchadmin}></a>
+				<{else}>
+					<a href='index.php?file=admincp&action=custom' target='_self'><{$lan.switcheditor}></a>
+				<{/if}>
+			</div>
+		<{/if}>
+		<div id="favorite"><{$favorite}></div>
+		<div id="logo"><a href='<{$softhomepage}>' target='_blank'><img src="<{$logo}>" border="0" /></a></div>
+		<div id="nav">
+			<{$nav}>
+		</div>
+		
+		<div id="redtip">
+			<div id="tiptextcontent">
+				<div id="tiptext" style="display:none;"></div>
+				<div id="tiptexts" style="display:none;"><{$lan.checkmessage}></div>
+			</div>
+			<div id="zhongjie" style="display: none; ">
+				<div id="redtipcontent">
+					<div id="tiparrow"></div>
+					<div id="tiptopborder"></div>
+					<div id="tipcontent">
+						<ul>
+						</ul>
+					</div>
+					<div id="tipbottomborder"></div>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+	<div id="menu" style="width:<{$menuwidth}>px;">
+		<{$menu}>
+	</div>
+	<div style="margin-left:<{$menuwidth2}>px;overflow:hidden;background-color:#9EB6D8;">
+		<iframe name="mainFrame" id="bodyiframe" src="index.php?file=welcome" frameborder="0" style="background-color:#9EB6D8;overflow-x:hidden;"></iframe>
+		<div style="clear:both;"></div>
+	</div>
+</body>
+</html>

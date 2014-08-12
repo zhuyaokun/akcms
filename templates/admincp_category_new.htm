@@ -1,0 +1,20 @@
+<{include file="admincp_header.htm"}>
+<body>
+<div class="block"></div>
+<form action="index.php?file=admincp&action=newcategory" method="post" name="categoryedit">
+<table cellpadding="5" cellspacing="1" class="commontable width100">
+<tr class="header">
+	<td colspan="10"><{$lan.category_new}></td>
+</tr>
+<tr>
+	<td width="100"><{$lan.category_name}></td>
+	<td><input type="text" name="category" class="mustoffer"></td>
+</tr>
+<tr>
+	<td colspan="10" align="center"><input type="submit" value="<{$lan.save}>" name="category_new_submit"></td>
+</tr>
+</table>
+<input type="hidden" name="categoryup" value="<{$parent}>">
+</form>
+</body>
+</html>

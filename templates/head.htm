@@ -1,0 +1,29 @@
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=<{$header_charset}>" />
+<{if $startinstall}>
+	<title><{$title}></title>
+<{else}>
+	<title><{$sitename}> <{$lan.cp}></title>
+<{/if}>
+<meta name="Robots" content="NOINDEX,NOFOLLOW,noarchive" />
+<meta http-equiv="pragma" content="no-cache" />
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate" />
+<meta http-equiv="expires" content="0" />
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
+<link href="<{$core_url}>images/admin/admin.css" rel="stylesheet" type="text/css" />
+<{if $customcss}><link href="<{$ak_url}>configs/customer.css" rel="stylesheet" type="text/css"><{/if}>
+<script language="javascript" src="<{$jquery}>"></script>
+<script>
+if(typeof jQuery == 'undefined') {
+	if(confirm("<{$lan.jqueryfail}>")) {
+		document.location = "http://www.akhtm.com/manual/custom-jquery.htm";
+	}
+} else {
+	if(jQuery.attrHooks != undefined) {
+		jQuery.attrHooks['width']=jQuery.attrHooks['height']=null;
+	}
+}
+</script>
+<script charset="utf-8" src="<{$core_url}>include/xh/xheditor-1.1.14-zh-cn.min.js"></script>
+<script src="<{$core_url}>include/common.js"></script>
+</head>

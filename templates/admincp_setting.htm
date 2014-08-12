@@ -1,0 +1,16 @@
+<{include file="admincp_header.htm"}>
+<script>
+$(document).ready(function(){
+$("tr").filter(":odd").not(".header").children("td").css("background", "#EFEFEF");
+});
+</script>
+<body>
+<div class="block"></div>
+<form action="index.php?file=setting" method="post">
+<{$str_settings}>
+</table>
+<input type="hidden" value="<{$action}>" name="action">
+<center><input type="submit" value="<{$lan.save}>" name="setting_submit"></center>
+</form>
+</body>
+</html>

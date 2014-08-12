@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<menus>
+	<group id="favorite" text="lan.qiucklinks">
+		<menu url="index.php?file=admincp&action=specialpages">lan.specialpage</menu>
+		<menu url="[homepage]*">lan.returntodefault</menu>
+		<menu url="index.php?file=welcome">lan.returntosystemdefault</menu>
+	</group>
+	<group id="content" text="lan.content">
+		<menu url="index.php?file=admincp&action=specialpages">lan.specialpage</menu>
+		<module>all</module>
+		<menu url="index.php?file=admincp&action=allcomments">lan.comment</menu>
+	</group>
+	<group id="system" text="lan.system">
+		<menu url="index.php?file=admincp&action=categories">lan.category</menu>
+		<menu url="index.php?file=admincp&action=sections">lan.section</menu>
+		<menu url="index.php?file=admincp&action=templates">lan.template</menu>
+		<menu url="index.php?file=admincp&action=variables">lan.variable</menu>
+		<menu url="index.php?file=admincp&action=modules">lan.module</menu>
+		<menu url="index.php?file=admincp&action=filters">lan.filter</menu>
+	</group>
+	<group id="createhtml" text="lan.batch">
+		<menu url="index.php?file=admincp&action=createcategory">lan.createcategory</menu>
+		<menu url="index.php?file=admincp&action=createitem">lan.createitem</menu>
+	</group>
+	<group id="setting" text="lan.setting">
+		<menu url="index.php?file=setting&action=generally">lan.generallysetting</menu>
+		<menu url="index.php?file=setting&action=functions">lan.functionssetting</menu>
+		<menu url="index.php?file=setting&action=front">lan.frontsetting</menu>
+		<menu url="index.php?file=setting&action=attach">lan.attachsetting</menu>
+		<menu url="index.php?file=setting&action=service">lan.servicesetting</menu>
+		<menu url="index.php?file=setting&action=frontswitch">lan.frontswitch</menu>
+	</group>
+	<group id="tools" text="lan.tools">
+		<menu url="index.php?file=welcome&action=updatecache">lan.updatecache</menu>
+	</group>
+	<group id="app" text="lan.app">
+		<menu id="appshop" url="index.php?file=app&action=appshop">lan.appshop</menu>
+		<menu id="alreadyinstalled" url="index.php?file=app&action=installed">lan.alreadyinstalled</menu>
+	</group>
+	<group id="account" text="lan.account">
+		<menu url="index.php?file=account&action=manageaccounts">lan.accountmanage</menu>
+		<menu url="index.php?file=account&action=changepassword">lan.changepassword</menu>
+		<menu url="index.php?file=account&action=logout&vc=[vc]#">lan.logout</menu>
+	</group>
+</menus>

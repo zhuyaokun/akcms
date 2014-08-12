@@ -1,0 +1,25 @@
+<{include file="admincp_header.htm"}>
+<body>
+<div class="block"></div>
+<table cellspacing="1" cellpadding="4" align="center" class="commontable">
+	<tr class="header">
+		<td colspan="3"><div class="righttop"><{h k='modules:?'}></div><{$lan.managemodules}></td>
+	</tr>
+	<tr>
+		<td>
+			<table border="0" cellpadding="4" cellspacing="1" class="commontable">
+			<tr class="header">
+				<td width="35">ID</td>
+				<td><{$lan.modulename}></td>
+				<td><{$lan.del}></td>
+			</tr>
+			<{$moduleslist}>
+			<tr>
+				<td colspan="5"><input type="button" onclick="document.location='index.php?file=admincp&action=modules&job=addmodule'" value="<{$lan.addmodules}>"></td>
+			</tr>
+			</table>
+		</td>
+	</tr>
+</table>
+</body>
+</html>

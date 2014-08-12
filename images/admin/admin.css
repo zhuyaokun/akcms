@@ -1,0 +1,129 @@
+*{scrollbar-base-color:#F8F8F8;scrollbar-arrow-color:#698CC3;font-size:12px;font-family:Verdana;font-weight:normal;margin:0px;text-decoration:none;}
+body{background-color:#9EB6D8;margin:0px;padding:0px 2px;}
+frame{background-color:#9EB6D8;margin:0px;}
+li,ul{margin:0px;padding:0px;}
+b{font-weight:bold;}
+a,a:visited{color:#003366}
+a:hover{text-decoration:underline}
+table{word-break:break-all;}
+input{font-family:11px}
+textarea{font-size:14px;padding:2px;line-height:18px;}
+.template{font-family:Courier New;width:99%;font-size:12px;margin-right:180px;}
+form{display:inline;margin:0px;border:0px;padding:0px;}
+
+.mustoffer{background-color:#FFFFD0;}
+.commontable{background:#D6E0EF;border:1px solid #698CC3;margin:0px auto;}
+.commontable td{background:#F8F8F8;line-height:19px;}
+.header{border:1px solid #D4E2EC;height:13px;overflow:hidden;border-bottom:0px;font:12px Tahoma,Verdana;color:#FFFFFF;background-color:#698CC3;padding:4px;}
+
+.header a,.header a:visited{color:#FFF}
+.header td{background:#698CC3;line-height:17px;}
+.content{background:#FFF;padding:5px;}
+.mininum,.mininum *{font-size:9px;-webkit-text-size-adjust:none;font-family:verdana}
+.width100{width:100%;}
+
+.block{display:block;height:3px;overflow:hidden;}
+.block2{display:block;height:5px;overflow:hidden;}
+#query_debug{border:1px dashed #222222;width:550px;margin:0px auto;font-family:Courier New;line-height:20px;background-color:#FFFFE0;padding:10px;text-align:left;}
+.login{text-align:right;}
+
+.bold{font-weight:bold}
+.red{color:#FF0000}
+.green{color:#008000}
+.alert{color:#FF0000}
+.righttop{float:right;}
+.index {color:#FFF;}
+.index li{float:left;padding:0px 2px 1px 2px;background:#9EB6D8;margin-right:3px;list-style-type:none;border:1px #9EB6D8 solid;}
+.index a,.index a:visited{color:#000;}
+.index .page{background:#FFF;border:1px solid #FFF;}
+.index .page a,.index .page a:visited{color:#000;}
+#categoriestree{line-height:15px;}
+#categoriestree div img{margin:0px 3px;}
+.s1{width:30px;display:inline-block;}
+.s2{width:60px;display:inline-block;}
+.s3{width:90px;display:inline-block;}
+.s4{width:120px;display:inline-block;}
+.s5{width:150px;display:inline-block;}
+.s6{width:180px;display:inline-block;}
+.s7{width:210px;display:inline-block;}
+.f{width:28px;display:inline;float:left;background:url(folder.gif);background-repeat:no-repeat;margin-right:0px;}
+.f2{width:28px;display:inline;float:left;background:url(folder.gif);background-position:0 -14;background-repeat:no-repeat;margin-right:-30px;}
+.f3{width:28px;display:inline;float:left;background:url(folder.gif);background-position:0 -28;background-repeat:no-repeat;margin-right:-30px;}
+.tdnum{text-align:right;}
+.ci{padding-left:30px;}
+.categoryselect select{margin-right:3px;display:none;}
+.i{display:inline;padding-left:-3px;width:9px;}
+.i a{margin-left:-3px;}
+.w9{width:9px;}
+.w20{width:20px;}
+.treeroot{display:inline;width:22px;background:url(folder.gif);background-position:-9;background-repeat:no-repeat;}
+.r{float:right;margin-top:-3px;}
+.welcomeright{float:right;width:330px;height:95px;overflow:hidden;border-left:dashed 1px #CCCCCC;padding-left:10px;}
+.templateright{float:right;width:180px;overflow:hidden;border-left:dashed 1px #CCCCCC;}
+
+#header{width:100%;height:26px;overflow:hidden;background:#FFF;background:url(headerbg.png);}
+#logo{float:left;height:25px;width:120px;border:0px;overflow:hidden;}
+#nav{float:left;padding-top:5px;}
+#nav ul{}
+#nav li{float:left;height:16px;padding:4px 15px 0px 15px;margin-right:5px;background:#698CC4;list-style:none;color:#EEEEEE;cursor:pointer}
+#nav li.current{background:#9EB6D8;padding:4px 15px;margin-top:-2px;color:#FFFFFF;border-top:1px solid #555555;border-right:1px solid #555555;}
+
+#menu{position:absolute;left:0px;overflow:hidden;margin-top:3px;margin-left:2px;border:1px solid #688DC1;overflow:visible;}
+#menu ul{overflow:hidden;margin:0px;border:1px solid #D7E0F1;background:#F8F8F8;}
+#menu li{height:21px;overflow:hidden;list-style:none;}
+.menutitle{height:19px;padding:0px;padding-left:4px;padding-top:6px;overflow:hidden;background:#698CC4;color:#FFFFFD;border:1px solid #D7E0F1;border-bottom:0px;text-align:center;}
+#menu li a{display:block;padding:4px 5px;color:#000000;text-decoration:none;}
+#menu li a:hover{color:#666666;text-decoration:none;}
+#menu li.current{margin:2px 0px;background:#9EB6D8;}
+#menu li.current a{display:block;color:#000;padding:4px 5px;text-decoration:none;}
+#menu_header{background:url(sprites.png);height:2px;overflow:hidden;}
+#menu_footer{background:url(sprites.png);background-position:0px -3px;background-repeat:no-repeat;height:2px;overflow:hidden;margin-top:5px;}
+#menu li a.menuplus {display:block;padding:0px;padding-right:3px;padding-top:1px;float:right;font-size:14px;}
+#c{width:2px;position:absolute;background:#9EB6D8;height:21px;left:-9px;}
+#newversion a{color:red;}
+a.help{color:yellow;font-size:9px;background:green;padding:0px 2px;height:13px;overflow:hidden;line-height:12px;}
+a.help2{color:red;font-size:9px;background:#006B9F;padding:0px 2px;height:13px;overflow:hidden;line-height:12px;float:right;}
+#switchmode{float:right;padding:6px;}
+#favorite{float:right;padding:6px;padding-right:0px;}
+#favorite a{margin-left:6px;}
+
+#rightinfo{float:left;margin-top:3px;margin-right:3px;margin-left:3px;}
+.rightinfocontent{position:relative;border:1px solid #698CC3;background:#F8F8F8;}
+.headertitle{position:relative;top:4px;margin:4px;font:12px Tahoma,Verdana;color:#FFFFFF;}
+
+#redtip{text-align:center;color:#fff;height:13px;line-height:12px;1width:7px;float:left;padding:0px 3px;margin-top:7px;1margin-left:2px;}
+#tiptextcontent{position:absolute;_width:43px;_margin-right:20px;_float:right;cursor: pointer;}
+#tiptexts{display:inline;float:left;margin-top:7px;margin-left:5px;position: relative;left: 0px;top: -5px;_top:-6px;color: black;_width:24px;line-height:14px;}
+#tiptext{-webkit-text-size-adjust:none;text-align:center;width:13px;height:13px;line-height:13px;font-size:9px;float:right;background:red;border-radius:15px;}
+#zhongjie{display:none;position:absolute;color:#666666;top:20px;_top:19px;margin-left:27px;_margin-left:45px}
+#redtipcontent{position:relative;width:288px;left:-30px;_left:-45px;}
+#tiparrow{width:25px;height:12px;position:relative;left:20px;top:1px;_top:3px;_left:-115px;background:url(toparrow.gif);z-index:100;}
+#tiptopborder{height:10px;width:288px;background:#fff;border:1px solid #ccc;border-bottom:0px;border-radius:4px 4px 0px 0px;}
+#tipcontent{width:288px;background:#fff;border:1px solid #ccc;border-bottom:0px;border-top:0px;cursor:default;}
+#tipcontent ul{text-align:center;}
+#tipcontent ul li {line-height:20px;text-align:left;list-style:none;width:270px;padding-top:5px;border-top:1px dashed #ccc;margin:0px auto;margin-top:10px;}
+#tipcontent ul li a{color:#036;text-decoration:underline;}
+#tipbottomborder{height:10px;width:288px;background:#fff;border:1px solid #ccc;border-top:0px;border-radius:0px 0px 4px 4px;}
+
+.appcontent{text-align:center;font-size:12px;margin-top:15px;margin-left:15px;}
+.app{width:150px;height:145px;float:left;text-align:center;margin-right:15px;margin-bottom:15px;border:1px solid #ccc;background:#fff;}
+.appicon{width:150px;height:74px;background:#fff;border-bottom:1px dashed #ccc;cursor:pointer;}
+.appicon img{margin-top:3px;height:64px;width:64px;border:none;}
+.appname{text-align:center;font-weight:bold;}
+.productor{color:#888888;}
+.appdetail{list-style:none;width:150px;height:50px;text-align:left;background:#fff;}
+.appdetail li{list-style:none;line-height:20px;margin-left:3px;}
+.price{float:right;margin-right:5px;}
+.appbotton{width:150px;height:20px;}
+.installbotton{width:74px;height:20px;float:right;background:#ccc;}
+.appbotton a{line-height:20px;height:20px;width:74px;}
+.detailbotton{width:74px;height:20px;float:left;background:#ccc;}
+#ajaxtipbox{position:absolute;display:none;border:1px solid #F8F8F8;}
+#ajaxtipbox div{padding:15px;border:5px solid #698CC3;color:#000;font-size:14px;background:#F8F8F8;}
+
+.welcome_app{float:left;text-align:center;border:0px solid #ccc;margin-right:9px;padding:3px;height:90px}
+.welcome_appicon{width:100px;height:64px;}
+.welcome_appdetail{list-style:none;}
+
+#faq{overflow:hidden;}
+#faq li{width:228px;height:18px;overflow:hidden;float:left;}

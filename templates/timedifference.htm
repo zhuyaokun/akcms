@@ -1,0 +1,12 @@
+	<tr>
+		<td><{$lan.timedifference}></td>
+		<td>
+		<input type="text" name="timedifference" class="mustoffer" value="<{$timedifference}>" size="3"><br>
+		<{$lan.timedifference_description}>
+		</td>
+	</tr>
+	<script type="text/javascript">
+		var dateline = Math.round(new Date().getTime()/1000);
+		var df = Math.round((dateline - <{php}>echo time();<{/php}>) / 3600) + 8;
+		document.loginform.timedifference.value = df;
+	</script>

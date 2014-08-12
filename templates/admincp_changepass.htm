@@ -1,0 +1,27 @@
+<{include file="admincp_header.htm"}>
+<body>
+<div class="block"></div>
+<form action="index.php?file=account&action=changepassword&submit=1" method="post">
+<table cellspacing="1" align="center" cellpadding="4" class="commontable">
+	<tr class="header">
+		<td colspan="3"><{$lan.changepassword}></td>
+	</tr>
+	<tr>
+		<td><{$lan.oldpassword}></td>
+		<td><input type="password" value="" name="oldpassword"></td>
+	</tr>
+	<tr>
+		<td><{$lan.newpassword}></td>
+		<td><input type="password" value="" name="newpassword"></td>
+	</tr>
+	<tr>
+		<td><{$lan.newpassword2}></td>
+		<td><input type="password" value="" name="newpassword2"></td>
+	</tr>
+	<tr>
+		<td colspan="2" align="center"><input type="submit" value="<{$lan.save}>"></td>
+	</tr>
+</table>
+</form>
+</body>
+</html>

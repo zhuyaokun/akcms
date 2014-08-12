@@ -1,0 +1,69 @@
+<{include file="admincp_header.htm"}>
+<body>
+<div class="block"></div>
+<table width="100%" border="0" align="center" cellpadding="4" cellspacing="1" class="commontable">
+<form action="index.php?file=admincp&action=editsection&id=<{$id}>" method="post" name="sectionedit">
+	<tr class="header">
+		<td colspan="10"><{$lan.section_edit}></td>
+	</tr>
+	<tr>
+		<td><{$lan.section_name}></td>
+		<td><input type="text" name="section" value="<{$section}>"></td>
+	</tr>
+	<tr>
+		<td><{$lan.alias}></td>
+		<td><input type="text" name="alias" value="<{$alias}>"></td>
+	</tr>
+	<tr>
+		<td><{$lan.description}></td>
+		<td><textarea name="description" cols="60" rows="10"><{$description}></textarea></td>
+	</tr>
+	<tr>
+		<td><{$lan.keywords}></td>
+		<td><textarea name="keywords" cols="60" rows="3"><{$keywords}></textarea></td>
+	</tr>
+	<tr>
+		<td><{$lan.sectionhometemplate}></td>
+		<td><select name="defaulttemplate">
+		<option value=""><{$lan.default}></option>
+		<{$selecttemplates}>
+		</select></td>
+	</tr>
+	<tr>
+		<td><{$lan.sectionpagetemplate}></td>
+		<td><select name="listtemplate">
+		<option value=""><{$lan.default}></option>
+		<{$selecttemplates}>
+		</select></td>
+	</tr>
+	<tr>
+		<td><{$lan.ifcreatehtml}></td>
+		<td>
+			<input type="radio" name="html" value="0"<{if $html eq 0}> checked<{/if}>><{$lan.withglobal}>
+			<input type="radio" name="html" value="1"<{if $html eq 1}> checked<{/if}>><{$lan.yes}>
+			<input type="radio" name="html" value="-1"<{if $html eq -1}> checked<{/if}>><{$lan.no}>
+		</td>
+	</tr>
+	<tr>
+		<td><{$lan.sectionhomemethod}></td>
+		<td><input type="text" value="<{$sectionhomemethod}>" name="sectionhomemethod" size="50"><br>
+		(<{$lan.default}>:"<{$setting_sectionhomemethod}>"&nbsp;<a href="index.php?file=setting&action=generally"><{$lan.modifyglobalsetting}></a>)<br>
+	<{$lan.sectionhomemethod_description}></td>
+	</tr>
+	<tr>
+		<td><{$lan.order}></td>
+		<td><input type="text" name="order" value="<{$orderby}>"></td>
+	</tr>
+<script>
+document.sectionedit.html.value = "<{$html}>";
+document.sectionedit.defaulttemplate.value = "<{$defaulttemplate}>";
+document.sectionedit.listtemplate.value = "<{$listtemplate}>";
+document.sectionedit.sectionhomemethod.value = "<{$sectionhomemethod}>";
+</script>
+	<tr>
+		<td colspan="10" align="center"><input type="submit" value="<{$lan.save}>" name="section_edit_submit"></td>
+	</tr>
+</form>
+</table>
+</body>
+</html>

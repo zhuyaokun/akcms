@@ -1,0 +1,73 @@
+<{include file="admincp_header.htm"}>
+<script language="javascript">
+function review(obj) {
+	$('#review' + obj).show();
+	$('#textareames' + obj).css("display","none");
+	$('#textarea' + obj).show();
+	$('#save' + obj).focus();
+	$('#textarea' + obj).focus();
+	$.get("index.php?file=admincp&action=getreview&all=1&itemid="+obj+"&r="+Math.random(), function(data){
+		$('#textarea' + obj).val(data);
+	});
+}
+function reviewcom(obj) {
+	$('#review' + obj).show();
+	$('#textarea' + obj).css("display","none");
+	$('#textareames' + obj).show();
+	$('#save' + obj).focus();
+	$('#textareames' + obj).focus();
+	$.get("index.php?file=admincp&action=getcmessage&all=1&itemid="+obj+"&r="+Math.random(), function(data){
+		$('#textareames' + obj).val(data);
+	});
+}
+function deletecomment(cid,itemid,vc) {
+	if(!confirm('<{$lan.suredelcomment}>')) return;
+	$.get("index.php?file=admincp&action=deletecomment&vc="+vc+"&all=1&id="+cid+"&itemid="+itemid+"&r="+Math.random(), function(data){
+		if(data !== 'no') {
+			$(".c"+cid).empty().remove();
+			ajaxtip('<{$lan.deleted}>');
+		} else if(data == 'no') {
+			ajaxtip('<{$lan.deletefailed}>');
+		}
+	});
+}
+function savecommentchange(cid,itemid) {
+	var reviewval = $("#textarea"+cid).val();
+	var messageval = $("#textareames"+cid).val();
+	$.post("index.php?file=admincp&action=reviewcomment&r="+Math.random(), {review:reviewval,message:messageval,id:cid}, function(data){
+		if(data == 'ok') {
+			$("#comspan"+cid).text(messageval);
+			$("#revspan"+cid).text(reviewval);
+			ajaxtip('<{$lan.commentssaved}>');
+		}
+	});
+}
+function denyip(ip, itemid, vc) {
+	$.get("index.php?file=admincp&action=commentdenyip&all=1&ip="+ip+"&itemid="+itemid+"&vc="+vc, function(data){
+		if(data == 'ok') {
+			ajaxtip("<{$lan.denyipsuccess}>");
+		} else if(data == 'no') {
+			ajaxtip("<{$lan.denyipfailed}>");
+		}
+	});
+}
+</script>
+<style>
+.reviewdiv{display:none;}
+</style>
+<body>
+<div class="block"></div>
+<iframe name="work" style="display:none"></iframe>
+<table border="0" align="center" cellpadding="4" cellspacing="1" class="commontable width100">
+<tr class="header">
+	<td><{$lan.comment}></td>
+</tr>
+<{$comments}>
+<form action="<{$indexurl}>" method="post">
+	<tr class="header">
+		<td><form action="index.php?file=admincp&action=allcomments" method="post"><ul class="index"><{$str_index}></ul></form></td>
+	</tr>
+</form>
+</table>
+</body>
+</html>

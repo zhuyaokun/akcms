@@ -1,0 +1,51 @@
+<{include file="admincp_header.htm"}>
+<body>
+<div class="block"></div>
+<form id="editpage" name="editpage" action="index.php?file=admincp&action=specialpages&id=<{$id}>" method="POST">
+<table width="100%" border="0" align="center" cellpadding="4" cellspacing="1" class="commontable">
+	<tr class="header">
+		<td colspan="2"><{$lan.specialpage_edit}></td>
+	</tr>
+	<tr>
+		<td width="60"><{$lan.pagename}></td>
+		<td><input type="text" name="pagename" style="width:200px;" value="<{$pagename}>" class="mustoffer"></td>
+	</tr>
+	<tr>
+		<td width="60"><{$lan.title}></td>
+		<td><input type="text" name="title" style="width:500px;" value="<{$title}>"><br /><{$lan.getintemplate}>:&lt;{$title}&gt;</td>
+	</tr>
+	<tr>
+		<td><{$lan.template}></td>
+		<td><select id="template" name="template" class="mustoffer"><{$str_templates}></select></td>
+	</tr>
+	<tr>
+		<td><{$lan.keywords}></td>
+		<td><input type="text" name="keywords" style="width:500px;" value="<{$keywords}>"><br /><{$lan.getintemplate}>:&lt;{$keywords}&gt;</td>
+	</tr>
+	<tr>
+		<td><{$lan.description}></td>
+		<td><textarea name="digest" style="width:500px;height:50px;"><{$digest}></textarea><br /><{$lan.getintemplate}>:&lt;{$description}&gt;</td>
+	</tr>
+	<tr>
+		<td><{$lan.filename}></td>
+		<td><input type="text" name="filename" size="20" value="<{$filename}>"> (<{$lan.ifnofilename}>)</td>
+	</tr>
+	<tr>
+		<td><{$lan.data}></td>
+		<td><div>
+<textarea name="data" id="data" style='width:100%;height:300px;' class="xheditor {hoverExecDelay:-1,upImgUrl:'index.php?file=upload&id=<{$id}>',upImgExt:'jpg,jpeg,gif,png',tools:'Source,Pastetext,|,Blocktag,Fontface,FontSize,Bold,Italic,Underline,Strikethrough,FontColor,BackColor,SelectAll,Removeformat,|,Align,List,Outdent,Indent,|,Link,Unlink,Anchor,Img,Hr,Table',loadCSS:'<style>body{font-size:14px;}</style>'}"><{$data}></textarea>
+</div>
+		</td>
+	</tr>
+	<tr>
+		<td colspan="2" align="center"><input type="submit" name="saveeditpage" size="20" value="<{$lan.save}>"></td>
+	</tr>
+</table>
+</form>
+<script>
+$(function(){
+	$("#template").val('<{$template}>');	
+});
+</script>
+</body>
+</html>

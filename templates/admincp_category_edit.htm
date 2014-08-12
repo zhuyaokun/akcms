@@ -1,0 +1,200 @@
+<{include file="admincp_header.htm"}>
+<body>
+<div class="block"></div>
+<table cellpadding="4" cellspacing="1" class="commontable width100">
+<form enctype="multipart/form-data" action="index.php?file=admincp&action=editcategory&id=<{$id}>" method="post" name="categoryedit">
+<tr class="header">
+	<td colspan="9"><{$lan.category_edit}></td>
+</tr>
+<tr>
+	<td width="100"><{$lan.category_name}></td>
+	<td><input type="text" name="category" value="<{$category}>" class="mustoffer">&nbsp;<input type="button" value="<{$lan.delete}>" name="delete" class="alert" onclick="delcategory()"></td>
+</tr>
+<tr>
+	<td><{$lan.alias}></td>
+	<td><input type="text" name="alias" value="<{$alias}>"></td>
+</tr>
+<{if $categoryup eq -11}>
+<tr>
+	<td><{$lan.binddomain}></td>
+	<td>
+		<input type="text" name="domain" size="40" value="<{$domain}>" onblur="checkdomain(this.value)"><span id="domain_msg"></span><br />
+		<{$lan.binddomain_desc}>
+	</td>
+</tr>
+<{/if}>
+<tr>
+	<td><{$lan.categoryup}></td>
+	<td>
+<{if $selectcategories}>
+		<select name="categoryup" id="categoryup">
+			<option value="0"><{$lan.rootcategory}></option>
+		<{$selectcategories}>
+		</select>
+<{else}>
+<input type="text" size="6" name="categoryup" value="0">
+<{/if}>
+	</td>
+</tr>
+<tr>
+	<td><{$lan.bindmodule}></td>
+	<td>
+		<select name="module" id="module">
+		<{$selectmodules}>
+		</select>
+	</td>
+</tr>
+<tr>
+	<td><{$lan.description}></td>
+	<td><textarea name="description" cols="80" rows="3"><{$description}></textarea></td>
+</tr>
+<tr>
+	<td><{$lan.data}></td>
+	<td><textarea name="data" cols="80" rows="5"><{$data}></textarea></td>
+</tr>
+<tr>
+	<td><{$lan.keywords}></td>
+	<td><textarea name="keywords" cols="80" rows="3"><{$keywords}></textarea></td>
+</tr>
+<tr>
+	<td width="50" valign="top"><{$lan.picture}></td>
+	<td>
+		<table>
+			<tbody>
+				<tr>
+					<td><{$lan.pictureurl}>:<input type="text" name="picture" value="<{$picture}>" size="50"></td><td><a target="_blank" href='<{$repicture}>'>  <{$lan.preview}></td>
+				</tr>
+				<tr>
+					<td><{$lan.or}></td>
+				</tr>
+				<tr>
+					<td><{$lan.uploadpicture}>:<input type="file" name="uploadpicture" value=""></td>
+				</tr>
+			</tbody>
+		</table>
+	</td>
+</tr>
+<tr>
+	<td><{$lan.order}></td>
+	<td><input type="text" name="order" value="<{$orderby}>"></td>
+</tr>
+<tr>
+	<td><{$lan.path}></td>
+	<td><input type="text" name="path" value="<{$path}>"></td>
+</tr>
+<tr>
+	<td><{$lan.itemtemplate}></td>
+	<td>
+	<select name="itemtemplate" id="itemtemplate">
+	<option value=""><{$lan.default}></option>
+	<{$selecttemplates}>
+	</select>
+	</td>
+</tr>
+<tr>
+	<td><{$lan.storemethod}></td>
+	<td><input type="text" value="<{$storemethod}>" name="storemethod" size="50"></td>
+</tr>
+<tr>
+	<td><{$lan.template2}></td>
+	<td><select id="template2" name="template2"><option value=""><{$lan.pleasechoose}></option><{$selecttemplates}></select></td>
+</tr>
+<tr>
+	<td><{$lan.storemethod2}></td>
+	<td><input type="text" id="storemethod2" name="storemethod2" value="<{$storemethod2}>" size="50"></td>
+</tr>
+<tr>
+	<td><{$lan.template3}></td>
+	<td><select id="template3" name="template3"><option value=""><{$lan.pleasechoose}></option><{$selecttemplates}></select></td>
+</tr>
+<tr>
+	<td><{$lan.storemethod3}></td>
+	<td><input type="text" id="storemethod3" name="storemethod3" value="<{$storemethod3}>" size="50"></td>
+</tr>
+<tr>
+	<td><{$lan.template4}></td>
+	<td><select id="template4" name="template4"><option value=""><{$lan.pleasechoose}></option><{$selecttemplates}></select></td>
+</tr>
+<tr>
+	<td><{$lan.storemethod4}></td>
+	<td><input type="text" id="storemethod4" name="storemethod4" value="<{$storemethod4}>" size="50"></td>
+</tr>
+<tr>
+	<td><{$lan.pagetemplate}></td>
+	<td><select id="pagetemplate" name="pagetemplate"><option value=""><{$lan.pleasechoose}></option><{$selecttemplates}></select></td>
+</tr>
+<tr>
+	<td><{$lan.pagestoremethod}></td>
+	<td><input type="text" id="pagestoremethod" name="pagestoremethod" value="<{$pagestoremethod}>" size="50"></td>
+</tr>
+<tr>
+	<td><{$lan.defaulttemplate}></td>
+	<td>
+	<select name="defaulttemplate" id="defaulttemplate">
+	<option value=""><{$lan.default}></option>
+	<{$selecttemplates}>
+	</select>
+	</td>
+</tr>
+<tr>
+	<td><{$lan.categoryhomemethod}></td>
+	<td><input type="text" value="<{$categoryhomemethod}>" name="categoryhomemethod" size="50"> <{h k="category-storage-setting:help"}></td>
+</tr>
+<tr>
+	<td><{$lan.listtemplate}></td>
+	<td>
+	<select name="listtemplate" id="listtemplate">
+	<option value=""><{$lan.default}></option>
+	<{$selecttemplates}>
+	</select>
+	</td>
+</tr>
+<tr>
+	<td><{$lan.ifcreatehtml}></td>
+	<td>
+		<input type="radio" name="html" value="0"<{if $html eq 0}> checked<{/if}>><{$lan.withglobal}>
+		<input type="radio" name="html" value="1"<{if $html eq 1}> checked<{/if}>><{$lan.yes}>
+		<input type="radio" name="html" value="-1"<{if $html eq -1}> checked<{/if}>><{$lan.no}>
+	</td>
+</tr>
+<tr>
+	<td colspan="9" align="center"><input type="submit" value="<{$lan.save}>" name="category_edit_submit"></td>
+</tr>
+</form>
+</table>
+<script language="javascript">
+function delcategory() {
+	if(confirm('<{$lan.suredelpage}>')) {
+		document.location = "index.php?file=admincp&action=deletecategory&id=<{$id}>&vc=<{$vc}>";
+	}
+}
+function checkdomain(domain) {
+	if(domain == '') {return true;}
+	$.get('index.php?file=admincp&action=ajaxcheckdomain&id=<{$id}>&domain=' + domain, recall);
+}
+function recall(strers) {
+	var s = strers;
+	if(s.indexOf('error') != -1) {
+		$("#domain_msg").text("<{$lan.bindederror}>");
+		$("#domain_msg").css("color", 'red');
+		$("#domain_msg").css("padding-left", '9px');
+		$("#domain_msg").show();
+	} else {
+		$("#domain_msg").hide();
+	}
+}
+$(document).ready(function(){
+	$("#module").val(<{$module}>);
+	$("#categoryup").val(<{$categoryup}>);
+	$("#template2").val("<{$template2}>");
+	$("#template3").val("<{$template3}>");
+	$("#template4").val("<{$template4}>");
+	$("#pagetemplate").val("<{$pagetemplate}>");
+	$("#itemtemplate").val("<{$itemtemplate}>");
+	$("#defaulttemplate").val("<{$defaulttemplate}>");
+	$("#listtemplate").val("<{$listtemplate}>");
+	$("tr").not(":odd").not(".header").children("td").css("background", "#FFFFFF");
+});
+</script>
+</body>
+</html>

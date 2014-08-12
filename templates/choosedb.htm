@@ -1,0 +1,32 @@
+<{include file="admincp_header.htm"}>
+<script type="text/javascript">
+function goinstall() {
+	if(document.getElementById('dbtype').value) {
+		document.location='index.php?file=install&language=<{$smarty.get.language}>&dbtype='+document.getElementById('dbtype').value;
+	} else{
+		alert("<{$lan.pleasechoosedb}>");
+	}
+}
+</script>
+<body>
+<div class="block2"></div>
+	<table cellspacing="0" cellpadding="0" align="center" class="commontable" width="300">
+		<tr>
+			<td><table border="0" cellspacing="1" cellpadding="4" width="100%">
+					<tr class="header">
+						<td colspan="4"><{$sysname}> <{$sysedition}> Install</td>
+					</tr>
+					<tr>
+						<td>
+<select id="dbtype">
+<option value=""><{$lan.pleasechoosedb}></option>
+<{$drivers}>
+</select>&nbsp;&nbsp;&nbsp;<{h k='mysql-sqlite:dbtypedescription'}><br><br>
+<center><input type="button" value="<{$lan.next}>" onclick="goinstall()"><br /><{$lan.sqlitecannotupdate}></center>
+</td>
+					</tr>
+			</table></td>
+		</tr>
+	</table>
+</body>
+</html>
