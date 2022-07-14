@@ -6,17 +6,9 @@ if(!defined('AK_ROOT')) {
 	define('AK_ROOT', substr(__FILE__, 0, -9));
 }
 require CORE_ROOT.'include/common.inc.php';
-if(isset($get_app)) {
-	$app = $get_app;
-	include AK_ROOT.'include/admin.inc.php';
-	include AK_ROOT.'include/app.inc.php';
-	$file = AK_ROOT.'configs/apps/'.$app.'/program/index.php';
-	if(file_exists($file)) require $file;
-} else {
-	$file = 'install';
-	if(ifinstalled()) $file = 'admincp';
-	if(!empty($_GET['file'])) $file = $_GET['file'];
-	if(!in_array($file, array('account', 'admincp', 'db', 'customer', 'install', 'login', 'setting', 'upload', 'welcome', 'upgrade', 'repair', 'theme', 'app', 'license'))) exit;
-	require CORE_ROOT.$file.'.php';
-}
+$file = 'install';
+if(ifinstalled()) $file = 'admincp';
+if(!empty($_GET['file'])) $file = $_GET['file'];
+if(!in_array($file, array('account', 'admincp', 'db', 'customer', 'install', 'login', 'se', 'spider', 'setting', 'upload', 'welcome', 'upgrade', 'repair', 'theme'))) exit;
+require CORE_ROOT.$file.'.php';
 ?>

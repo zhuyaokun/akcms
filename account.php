@@ -1,10 +1,10 @@
 <?php
-if(!defined('CORE_ROOT')) exit();
+if(!defined('CORE_ROOT')) @include 'include/directaccess.php';
 require_once CORE_ROOT.'include/admin.inc.php';
 if($get_action == 'changepassword') {
 	if(isset($get_submit)) {
-		if(!isset($post_oldpassword) || !isset($post_newpassword) || !isset($post_newpassword2)) adminmsg($lan['passwordempty'], 'back', 3, 1);
 		if($post_newpassword != $post_newpassword2) adminmsg($lan['repeatpassworderror'], 'back', 3, 1);
+		if(empty($post_oldpassword) || empty($post_newpassword)) adminmsg($lan['passwordempty'], 'back', 3, 1);
 		if($user = $db->get_by('*', 'admins', "editor='$admin_id'")) {
 			if($user['password'] != ak_md5($post_oldpassword, 0, 2)) adminmsg($lan['oldpassworderror'], 'back', 3, 1);
 			$newpassword = ak_md5($post_newpassword, 0, 2);
@@ -46,7 +46,8 @@ if($get_action == 'changepassword') {
 			<td class=\"mininum\">{$user['items']}</td>
 			</tr>";
 		}
-		displaytemplate('admincp_manageaccounts.htm', array('users' => $str_users));
+		$smarty->assign('users', $str_users);
+		displaytemplate('admincp_manageaccounts.htm');
 	} elseif($get_job == 'newaccount') {
 		if(empty($post_account) || empty($post_password)) adminmsg($lan['accountorpasswordempty'], 'back', 3, 1);
 		if($db->get_by('*', 'admins', "editor='$post_account'")) adminmsg($lan['accountexist'], 'back', 3, 1);
@@ -80,7 +81,6 @@ if($get_action == 'changepassword') {
 		adminmsg($lan['passwordreset'], 'index.php?file=account&action=manageaccounts');
 	}
 }elseif($get_action == 'logout') {
-	vc();
 	setcookie('auth', '');
 	aksetcookie('auth', '');
 	adminmsg($lan['logout_success'], 'index.php?file=login');

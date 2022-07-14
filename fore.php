@@ -7,6 +7,6 @@ if(!defined('AK_ROOT')) {
 }
 require_once CORE_ROOT.'include/common.inc.php';
 if(empty($file)) exit;
-if(!in_array($file, array('attachment', 'captcha', 'category', 'comment', 'inc', 'include', 'item', 'keyword', 'page', 'post', 'rounter', 'score', 'section', 'user.baidu', 'user', 'user.txwb', 'do', 'app'))) exit;
+if(!in_array($file, array('attachment', 'captcha', 'category', 'comment', 'inc', 'include', 'item', 'keyword', 'page', 'post', 'rounter', 'score', 'section', 'user.baidu', 'user', 'user.qqwb'))) exit;
 require CORE_ROOT.'fore/'.$file.'.php';
 ?>
