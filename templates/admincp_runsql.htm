@@ -1,0 +1,47 @@
+<{include file="admincp_header.htm" }>
+	<body>
+		<div class="block">
+		</div>
+		<{$result}>
+			<table cellspacing="1" cellpadding="4" class="commontable width100">
+				<tr class="header">
+					<td colspan="3">
+						<{$lan.runsql}>
+					</td>
+				</tr>
+				<tr>
+					<form action="index.php?file=welcome&action=runsql" method="POST">
+						<td align="center">
+							<textarea name="sql" style="width:100%;height:99px;"><{$sql}></textarea><br>
+							update ccproxy_texts set text=replace(text, '　',' ');<br>
+update ccproxy_texts set text=replace(text,'：',':');<br>
+update ccproxy_texts set text=replace(text,'。','.');<br>
+update ccproxy_texts set text=replace(text,'“','"');<br>
+update ccproxy_texts set text=replace(text,'”','"');<br>
+update ccproxy_texts set text=replace(text,'？','?');<br>
+update ccproxy_texts set text=replace(text,'（','(');<br>
+update ccproxy_texts set text=replace(text,'）',')');<br>
+update ccproxy_texts set text=replace(text,'‘','''');<br>
+update ccproxy_texts set text=replace(text,'’','''');<br>
+update ccproxy_texts set text=replace(text,'；',';');<br>
+update ccproxy_texts set text=replace(text,'【','[');<br>
+update ccproxy_texts set text=replace(text,'】',']');<br>
+update ccproxy_texts set text=replace(text,'《','"');<br>
+update ccproxy_texts set text=replace(text,'》','"');<br>
+update ccproxy_texts set text=replace(text,'、',',');<br>
+update ccproxy_texts set text=replace(text,'，',',');<br>
+update ccproxy_texts set text=replace(text,'！','!');<br>
+update ccproxy_texts set text=replace(text,'￥','$');<br>
+update ccproxy_texts set text=replace(text,'……','...');<br>
+update ccproxy_texts set text=replace(text,'——','--');<br>
+update ccproxy_categories set data=replace(data,'http://www.youngzsoft.net/ccproxy/','/ccproxy/');<br>
+
+							<br />
+							<input type="submit" value="<{$lan.runsql}>">
+						</td>
+					</form>
+				</tr>
+			</table>
+	</body>
+	
+	</html>

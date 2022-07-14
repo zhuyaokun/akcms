@@ -1,52 +1,59 @@
-<{include file="admincp_header.htm"}>
-<script>
-var step = new Array();
+﻿<{include file="admincp_header.htm"}>
+<script>var step = new Array();
 <{foreach from=$steps key=key item=step}>
 step[<{$key}>] = "<{$step}>";
 <{/foreach}>
-function runprocess() {
-	$.get('<{$processurl}>&rand=' + Math.random(), recall);
+function runprocess() 
+{
+$.get('<{$processurl}>&rand=' + Math.random(), recall);
 }
-function recall(strers) {
-	var returnvalue = strers.split("\t");
-	var percent = returnvalue[0];
-	var stepid = returnvalue[1];
-	var title = returnvalue[2];
-	if(typeof title != "undefined" && title != "" && strers.length < 100) $("#title").html(title);
-	if(percent < 100 && percent > 0) {
-		if(stepid < step.length) {$("#step").html(step[stepid] + ": ");}
-		$("#percentspan").html(percent);
-		$("#processdiv").width(percent + "%");
-	} else if(percent == 100){
-		$("#percentspan").html("100");
-		$("#title").html("<{$lan.finished}>");
-		$("#processdiv").width("100%");
-<{if $targeturl}>
-document.location.href = "<{$targeturl}>";
-<{else}>
-alert("<{$completetipmsg}>");
-<{/if}>
-		return true;
-	}
-	setTimeout("runprocess()", <{$timeout}>);
+function recall(strers) 
+{
+var returnvalue = strers.split("\t");
+var percent = returnvalue[0];
+var stepid = returnvalue[1];
+var title = returnvalue[2];
+if(percent < 100 && percent > 0) 
+{
+if(title != "") $("#title").html(title);
+if(stepid != "" && stepid != undefined && step[stepid] != "") 
+{
+$("#step").html(step[stepid] + ": ");
 }
-</script>
-<body>
-<div class="block"></div>
-<table cellspacing="1" cellpadding="4" align="center" class="commontable" style="width:666px;">
-	<tr class="header">
-		<td colspan="3"><{$title}></td>
-	</tr>
-	<tr>
-		<td style="padding:16px;">
-			<div style="border:1px solid #555;padding:1px;width:100%;height:15px;background:#FFF;">
-				<div id="processdiv" style="width:0px;background:#9EB6D8;height:15px;"></div>
-			</div>
-			<div style='width:150px;float:right;text-align:right;margin-top:10px;'><{$lan.finished}> <span id="percentspan">0.00</span> %&nbsp;</div>
-			<div style='width:445px;margin-top:10px;'><span id='step'></span><span id='title'></span></div>
-		</td>
-	</tr>
-</table>
-<script>runprocess();</script>
-</body>
-</html>
+$("#percentspan").html(percent);
+$("#processdiv").width(percent + "%");
+}
+ else if(percent == 100)
+ {
+ $("#percentspan").html("100");
+ $("#processdiv").width("100%");
+ $("#title").html("恭喜！已经完成！");
+ //alert("<{$lan.operatesuccess}>");
+ <{if $targeturl}>document.location.href = "<{$targeturl}>";
+ <{/if}>
+ return true;
+ }
+ setTimeout("runprocess()", <{$timeout}>);}
+ </script>
+ <body>
+ <div class="block"></div>
+ <table cellspacing="1" cellpadding="4" align="center" class="commontable" style="width:666px;">
+ <tr class="header"><td colspan="3"><{$title}></td></tr>
+ <tr><td style="padding:16px;">
+ <div style="border:1px solid #555;padding:1px;width:100%;height:15px;background:#FFF;">
+ <div id="processdiv" style="width:0px;background:#9EB6D8;height:15px;">
+ </div>
+ </div>
+ <div style='width:150px;float:right;text-align:right;margin-top:10px;'>
+ <{$lan.finished}> 
+ <span id="percentspan">0.00</span> %&nbsp;[<a href="javascript:document.location.reload();"><{$lan.refresh}></a>]
+ </div>
+ <div style='width:445px;margin-top:10px;'>
+ <span id='step'></span>
+ <span id='title' style="color:green;font-weight:bold;"></span>
+ </div>
+ </td></tr>
+ </table>
+ <script>runprocess();</script>
+ </body>
+ </html>

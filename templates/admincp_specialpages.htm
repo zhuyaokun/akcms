@@ -1,50 +1,83 @@
-<{include file="admincp_header.htm"}>
+<{include file="admincp_header.htm" }>
 <script language="javascript">
-function confirmdelete() {
-	if(!confirm('<{$lan.suredelitem}>')) {
-		return false;
+	function confirmdelete() {
+		if (!confirm('<{$lan.suredelitem}>')) {
+			return false;
+		}
 	}
-}
 </script>
 <body>
-<div class="block"></div>
-<iframe name="work" width="1" height="1" src="" style="display:none"></iframe>
-<table width="100%" border="0" align="center" cellpadding="4" cellspacing="1" class="commontable">
-	<tr class="header">
-		<td width="20">ID</td>
-		<td width="160"><{$lan.pagename}></td>
-		<td width="100"><{$lan.template}></td>
-		<td><{$lan.filename}></td>
-		<td align="center">PV</td>
-		<td align="center"><{$lan.preview}></td>
-		<td align="center"><{$lan.realurl}></td>
-		<td align="center"><{$lan.createhtml}></td>
-		<td align="center"><{$lan.delete}></td>
-	</tr>
-<{$str_pages}>
-</table>
-<div class="block"></div>
-<table width="100%" border="0" align="center" cellpadding="4" cellspacing="1" class="commontable">
-	<tr class="header">
-		<td colspan="2"><{$lan.add}></td>
-	</tr>
-<form name="newpage" action="index.php?file=admincp&action=specialpages&job=newpage" method="POST">
-	<tr>
-		<td width="50"><{$lan.pagename}></td>
-		<td><input type="text" name="pagename" size="20" class="mustoffer"></td>
-	</tr>
-	<tr>
-		<td><{$lan.template}></td>
-		<td>
-		<select name="template" class="mustoffer">
-		<{$str_templates}>
-		</select>
-		</td>
-	</tr>
-	<tr>
-		<td style="text-align:center" colspan="2"><input type="submit" name="savenewpage" size="20" value="<{$lan.save}>"></td>
-	</tr>
-</form>
-</table>
+	<div class="block">
+	</div>
+	<iframe name="work" width="1" height="1" src="" style="display:none">
+	</iframe>
+	<table width="100%" border="0" align="center" cellpadding="4" cellspacing="1" class="commontable">
+		<tr class="header">
+			<td width="20">
+				ID
+			</td>
+			<td width="160">
+				<{$lan.pagename}>
+			</td>
+			<td width="100">
+				<{$lan.template}>
+			</td>
+			<td>
+				<{$lan.filename}>
+			</td>
+			<td align="center">
+				PV
+			</td>
+			<td align="center">
+				<{$lan.preview}>
+			</td>
+			<td align="center">
+				<{$lan.realurl}>
+			</td>
+			<td align="center">
+				<{$lan.createhtml}>
+			</td>
+			<td align="center">
+				<{$lan.delete}>
+			</td>
+		</tr>
+		<{$str_pages}>
+	</table>
+	<div class="block">
+	</div>
+	<table width="100%" border="0" align="center" cellpadding="4" cellspacing="1"
+	class="commontable">
+		<tr class="header">
+			<td colspan="2">
+				<{$lan.add}>
+			</td>
+		</tr>
+		<form name="newpage" action="index.php?file=admincp&action=specialpages&job=newpage"
+		method="POST">
+			<tr>
+				<td width="50">
+					<{$lan.pagename}>
+				</td>
+				<td>
+					<input type="text" name="pagename" size="20" class="mustoffer">
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<{$lan.template}>
+				</td>
+				<td>
+					<select name="template" class="mustoffer">
+						<{$str_templates}>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td style="text-align:center" colspan="2">
+					<input type="submit" name="savenewpage" size="20" value="<{$lan.save}>">
+				</td>
+			</tr>
+		</form>
+	</table>
 </body>
 </html>
