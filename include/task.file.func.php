@@ -2,31 +2,15 @@
 if(!defined('CORE_ROOT')) exit;
 define('TASKFILE', AK_ROOT.'cache/tasks/[key]');
 define('TASKFILEOFFSET', AK_ROOT.'cache/tasks/[key].offset');
-if(!isset($cc_pid_path)) $cc_pid_path = AK_ROOT.'cache/pids';
 
-createpathifnotexists(AK_ROOT."cache/tasks");
-
-
-
-function gettask($key, $num = 0, $test = 0) {
-	global $pid, $cc_pid_path;
+function gettask($key, $num = 0) {
+	usleep(10);
 	if($num == 0) {
 		$onereturn = 1;
 		$num = 1;
-	} elseif($num == -1) {
-		$num = PHP_INT_MAX;
-	}
-	if(substr($key, 0, 1) === '*') {
-		$key = substr($key, 1);
-		$cc = 1;
-		createpathifnotexists($cc_pid_path);
-		createpathifnotexists("$cc_pid_path/$key");
 	}
 	$file = str_replace('[key]', $key, TASKFILE);
-	if(!file_exists($file)) {
-		akunlink("$cc_pid_path/$key/$pid");
-		return false;
-	}
+	if(!file_exists($file)) return false;
 	$offsetfile = str_replace('[key]', $key, TASKFILEOFFSET);
 	if(!file_exists($offsetfile)) touch($offsetfile);
 	$task = '';
@@ -38,9 +22,8 @@ function gettask($key, $num = 0, $test = 0) {
 	if(!$fp = fopen($file, 'r')) {
 		flock($fo, LOCK_UN);
 		fclose($fo);
-		akunlink($file);
-		akunlink($offsetfile);
-		akunlink("$cc_pid_path/$key/$pid");
+		@unlink($file);
+		@unlink($offsetfile);
 		return '';
 	}
 	fseek($fp, $offset);
@@ -57,34 +40,27 @@ function gettask($key, $num = 0, $test = 0) {
 		}
 	}
 	fclose($fp);
-	if(empty($test)) {
-		rewind($fo);
-		fwrite($fo, $offset);
-		flock($fo, LOCK_UN);
-	}
+	rewind($fo);
+	fwrite($fo, $offset);
+	flock($fo, LOCK_UN);
 	fclose($fo);
 	if(empty($tasks)) {
-		@akunlink($file);
-		@akunlink($offsetfile);
-		akunlink("$cc_pid_path/$key/$pid");
-		return false;
+		@unlink($file);
+		@unlink($offsetfile);
+	}
+	foreach($tasks as $k => $v) {
+		$v = str_replace('#\n#', "\n", $v);
+		if(substr($v, 0, 2) == 'a:') $v = unserialize($v);
+		$tasks[$k] = $v;
+	}
+	if(!isset($onereturn)) {
+		return $tasks;
 	} else {
-		if(!empty($pid)) ak_touch("$cc_pid_path/$key/$pid");
-		foreach($tasks as $k => $v) {
-			$v = str_replace('#\n#', "\n", $v);
-			if(substr($v, 0, 2) == 'a:') $v = unserialize($v);
-			$tasks[$k] = $v;
-		}
-		if(!isset($onereturn)) {
-			return $tasks;
-		} else {
-			return current($tasks);
-		}
+		return current($tasks);
 	}
 }
 
 function addtask($key, $task) {
-	if(substr($key, 0, 1) === '*') $key = substr($key, 1);
 	$file = str_replace('[key]', $key, TASKFILE);
 	$offsetfile = str_replace('[key]', $key, TASKFILEOFFSET);
 	if(!file_exists($offsetfile)) touch($offsetfile);
@@ -95,26 +71,6 @@ function addtask($key, $task) {
 	fwrite($fp, $task."\n");
 	flock($fp, LOCK_UN);
 	fclose($fp);
-}
-
-function gettaskps($key) {
-	global $cc_pid_path, $pid;
-	if($pid == 0) return 0;
-	if(substr($key, 0, 1) === '*') $key = substr($key, 1);
-	if(!file_exists("$cc_pid_path/$key")) return 0;
-	$fp = opendir("$cc_pid_path/$key");
-	$count = 0;
-	while(false !== ($file = readdir($fp))) {
-		if($file === '.' || $file === '..') continue;
-		$_file = "$cc_pid_path/$key/$file";
-		
-		if(thetime() - filemtime($_file) > 600) {
-			akunlink($_file);
-		} else {
-			$count ++;
-		}
-	}
-	return $count;
 }
 
 function addtasks($key, $tasks) {
@@ -143,17 +99,17 @@ function gettaskpercent($key) {
 	if(!file_exists($offsetfile)) return 0;
 	$current = readfromfile($offsetfile);
 	if($current >= $total) {
-		@akunlink($file);
-		@akunlink($offsetfile);
-		return 99.99;
+		@unlink($file);
+		@unlink($offsetfile);
+		return 100; 
 	}
-	return min(99.99, nb($current * 100 / $total));
+	return number_format($current * 100 / $total, 2);
 }
 
 function deletetask($key) {
 	$file = str_replace('[key]', $key, TASKFILE);
 	$offsetfile = str_replace('[key]', $key, TASKFILEOFFSET);
-	@akunlink($offsetfile);
-	@akunlink($file);
+	@unlink($file);
+	@unlink($offsetfile);
 }
 ?>

@@ -10,23 +10,14 @@ class dbstuff {
 	var $dbpw = '';
 	var $dbname = '';
 	var $connect;
-	var $dbexist = 1;
-
 	function fetch_array($query) {
-		$array = $this->_fetch_array($query);
-		return $array;
+		return $this->_fetch_array($query);
 	}
 
-	function query($sql, $ignoresafe = 0) {
+	function query($sql) {
 		global $ifdebug, $slowquery, $thetime;
 		if(!empty($ifdebug)) $start = akmicrotime();
-		if(empty($ignoresafe)) {
-			if(preg_match('/^(select|delete)\s+.*?(select|update|detele|insert|replace)\s+/i', $sql, $match)) {
-				eventlog("REJECT\t".$sql, 'sql');
-				return false;
-			}
-		}
-		if($ignoresafe == 1 && strpos($sql, ";\n") != false) {
+		if(strpos($sql, ";\n") != false) {
 			$sqls = explode(";\n", $sql);
 			foreach($sqls as $sql) {
 				if(trim($sql) != "") $query = $this->_query($sql);
@@ -190,8 +181,7 @@ class dbstuff {
 	}
 
 	function halt($error, $sql) {
-		eventlog($sql.':'.$this->error($this->connect), 'sqlhalt');
-		aexit('<a href="http://www.akhtm.com/manual/sql-error.htm?source=ak" target="_blank">An SQL error occurred! You can find detail information in logs.</a>');
+		debug($sql."\n\nERROR:".$this->error($this->connect), 1);
 	}
 	
 	function getcreatetable($table) {
@@ -202,12 +192,11 @@ class dbstuff {
 
 	function fulltablename($table) {
 		global $tablepre;
-		if(in_array($table, array('admins', 'attachments', 'categories', 'comments', 'filenames', 'item_exts', 'items', 'modules', 'sections', 'settings', 'texts', 'variables', 'sessions', 'filters', 'keys', 'apps'))) {
+		if(in_array($table, array('admins', 'attachments', 'captchas', 'categories', 'comments', 'filenames', 'item_exts', 'items', 'modules', 'scores', 'sections', 'settings', 'texts', 'variables', 'ses', 'keywords', 'spider_catched', 'spider_contentrules', 'spider_contentpagerules', 'spider_listrules', 'users', 'orders', 'messages', 'sessions', 'filters', 'keys', 'actions'))) {
 			return $tablepre.'_'.$table;
 		} else {
-			if(substr($table, 0, 1) == '*') return $tablepre.'_'.substr($table, 1);
+			return $table;
 		}
-		return $table;
 	}
 	function gettableinfo($table) {
 		$return = array();

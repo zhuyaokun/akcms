@@ -37,8 +37,7 @@ class tpl {
 		return false;
 	}
 	function render($template) {
-		$html = $this->smarty->text($template);
+		$html = $this->smarty->render($template);
 		return $html;
 	}
 }
-?>

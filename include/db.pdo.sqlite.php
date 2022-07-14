@@ -7,7 +7,7 @@ class pdosqlitestuff extends dbstuff{
 	var $version = '';
 	var $dbname;
 	var $db;
-	function pdosqlitestuff($config = array()) {
+	function __construct($config = array()) {
 		if($config['version'] == 2) {
 			$this->db = new PDO("sqlite2:".AK_ROOT.$config['dbname']);
 		} else {
@@ -16,14 +16,6 @@ class pdosqlitestuff extends dbstuff{
 		$this->version = $this->version();
 		$this->dbname = $config['dbname'];
 		$this->db->beginTransaction();
-	}
-	function selectdb($dbname) {
-		if($config['version'] == 2) {
-			$this->db = new PDO("sqlite2:".$dbname);
-		} else {
-			$this->db = new PDO("sqlite:".$dbname);
-		}
-		$this->dbname = $dbname;
 	}
 	function _commit() {
 		$this->db->commit();
@@ -86,9 +78,6 @@ class pdosqlitestuff extends dbstuff{
 	function createtable($tablename, $data) {
 		$sql = sqlite_createtable($this->fulltablename($tablename), $data);
 		return $this->query($sql);
-	}
-	function emptytable($table) {
-		$this->query("delete from $table");
 	}
 	function gettableinfo($table) {
 		$return = array();

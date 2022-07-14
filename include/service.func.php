@@ -16,7 +16,8 @@ function cloudkeywords($content, $num = 10) {
 
 function cuturl($url) {
 	if(substr($url, 0, 7) != 'http://' && substr($url, 0, 8) != 'https://') return $url;
-	$apiurl = 'http://www.akhtm.com/akcms_ddz.php?action=cuturl&url='.urlencode($url);
+	$apiurl = 'http://api.akhtm.com/cuturl.php';
+	$apiurl .= "?url=".urlencode($url);
 	$cuturl = readfromurl($apiurl);
 	if(substr($cuturl, 0, 5) == 'error') return false;
 	return $cuturl;

@@ -1,145 +1,63 @@
-<{include file="admincp_xheader.htm"}>
-<body>
-<div id="leftinfo" style="float:left;overflow:hidden;width:1px;height:1px;">
-	<div class="block"></div>
-	<table cellspacing="1" cellpadding="4" class="commontable width100" id="quickoperatetable">
-		<tr class="header">
-			<td><div class="righttop"><{$lan.welcome}>,<{$admin_id}></div><{$lan.quickoperate}></td>
-		</tr>
-		<tr>
-			<td>
-				<b><{$lan.customquickoperate}></b>: <{$customquickoperate}>&nbsp;<a href="index.php?file=setting&action=custom"><{$lan.add}>+</a><br />
-				
-		<b><{$lan.favo}></b>: <a href="index.php?file=welcome&action=updatecache"><{$lan.updatecache}></a> <!--<{$lan.systeminfo}>--> <a href="index.php?file=admincp&action=createcategory"><{$lan.batchcreatehtml}>(<{$lan.category}>)</a> <a href="index.php?file=admincp&action=createitem"><{$lan.batchcreatehtml}>(<{$lan.item}>)</a> <a href="index.php?installtemplate=1" target="_parent"><{$lan.installtemplate}></a> <a href="index.php?app=akprober"><{$lan.systeminfo}></a><br />
-			
-			<b><{$lan.content}></b>: <a href="index.php?file=admincp&action=specialpages"><{$lan.page}></a> <{$moduleoperate}> <a href="index.php?file=admincp&action=allcomments"><{$lan.comment}></a><br />
-		
-		<b><{$lan.system}></b>: <a href="index.php?file=admincp&action=categories"><{$lan.category}></a> <a href="index.php?file=admincp&action=sections"><{$lan.section}></a> <a href="index.php?file=admincp&action=templates"><{$lan.template}></a> <a href="index.php?file=admincp&action=variables"><{$lan.variable}></a> <a href="index.php?file=admincp&action=modules"><{$lan.module}></a> <a href="index.php?file=admincp&action=filters"><{$lan.filter}></a><br />
-				
-			<b><{$lan.setting}></b>: <a href="index.php?file=setting&action=generally"><{$lan.generallysetting}></a> <a href="index.php?file=setting&action=functions"><{$lan.functionssetting}></a> <a href="index.php?file=setting&action=front"><{$lan.frontsetting}></a> <a href="index.php?file=setting&action=attach"><{$lan.attachsetting}></a> <a href="index.php?file=setting&action=service"><{$lan.servicesetting}></a> <a href="index.php?file=setting&action=frontswitch"><{$lan.frontswitch}></a><br />
-			
-			<b><{$lan.app}></b>: <{$app}><a href="index.php?file=app&action=appshop"><{$lan.appshop}>&gt;&gt;</a><br />
-			</td>
-		</tr>
-	</table>
-	<div class="block"></div>
-	<table cellspacing="1" cellpadding="4" class="commontable width100" id="siteinfotable">
-		<tr class="header">
-			<td><{$lan.siteinfo}></td>
-		</tr>
-		<tr>
-			<td>
-				<{$lan.siteitems}>:<{$items}><br>
-				<{$lan.sitepvs}>:<{$pvs}><br>
-			</td>
-		</tr>
-	</table>
-	<div class="block"></div>
-	<table cellspacing="1" cellpadding="4" class="commontable width100" id="coreinfotable">
-		<tr class="header">
-			<td><{$lan.coreinfo}></td>
-		</tr>
-		<tr>
-			<td>
-				<{$lan.akversion}>:AKCMS <{$akversion}>(<a href="http://www.akhtm.com/akcms_maillist.php" target="_blank"><{$lan.maillist}></a>)&nbsp;<span id="newversion"><span>&nbsp;</span></span><br />
-			<{$lan.licensestatus}>:<{if $authsuccess}>(<{$lan.licenseuser}>)(<a href='index.php?file=license' target='_self'><{$lan.licensecenter}></a>)<{else}>(<a href="http://www.akhtm.com/manual/powered-by-akcms.htm" target="_blank"><{$lan.freeuser}></a>)(<a href='index.php?file=license' target='_self'><{$lan.checklicence}></a>)<{/if}>
-			</td>
-		</tr>
-	</table>
-	<div class="block"></div>
-	<table cellspacing="1" cellpadding="4" class="commontable width100" id="faqtable">
-		<tr class="header">
-			<td><div class="righttop"><a href="http://bbs.akhtm.com/" target="_blank"><{$lan.ask}>&gt;&gt;</a></div><{$lan.faq}></td>
-		</tr>
-		<tr>
-			<td id="faqtd" style="overflow:hidden;">
-				<ul id="faq">
-					<li><{h k="auth-faq:faq1"}></li>
-					<li><{h k="create-html:faq2"}></li>
-					<li><{h k="fake-static:faq3"}></li>
-					<li><{h k="spider:faq4"}></li>
-					<li><{h k="add-editor:faq5"}></li>
-					<li><{h k="post-example:faq6"}></li>
-					<li><{h k="createhtmls:faq7"}></li>
-					<li><{h k="create-template:faq8"}></li>
-					<li><{h k="buy-template:faq9"}></li>
-					<li><{h k="xitongqianyi:faq10"}></li>
-					<li><{h k="akcms-update:faq11"}></li>
-					<li><{h k="time-differences:faq12"}></li>
-					<li><{h k="last-next-page:faq13"}></li>
-					<li><{h k="watermark:faq14"}></li>
-					<li><{h k="filter:faq15"}></li>
-					<li><{h k="run-php-in-template:faq16"}></li>
-					<li><{h k="custom-thumb-size:faq17"}></li>
-					<li><{h k="template-tag-php:faq18"}></li>
-					<li><{h k="cms_xingnengtiaoyou:faq19"}></li>
-					<li><{h k="debug:faq20"}></li>
-					<li><{h k="template-path:faq21"}></li>
-					<li><{h k="php-cli-windows-linux.htm:faq22"}></li>
-					<li><{h k="crontab:faq23"}></li>
-					<li><{h k="crack-warning:faq24"}></li>
-					<li><{h k="sql-error:faq25"}></li>
-					<li><{h k="ajax-comment-demo:faq26"}></li>
-					<li><{h k="custom-url:faq27"}></li>
-					<li><{h k="youarehere:faq28"}></li>
-					<li><{h k="support-password-info:faq29"}></li>
-					<li><{h k="template-recursion:faq30"}></li>
-					<li><{h k="clear-data:faq31"}></li>
-					<li><{h k="template-variables:faq32"}></li>
-					<li><{h k="ifnotempty:faq33"}></li>
-					<li><{h k="modules:faq34"}></li>
-					<li><{h k="custom-cp:faq35"}></li>
-					<li><{h k="cache-dynamic:faq36"}></li>
-					<li><{h k="akcms-struct:faq37"}></li>
-					<li><{h k="data-dic:faq38"}></li>
-					<li><{h k="troubleshooting:faq39"}></li>
-					<li><{h k="charset-error:faq40"}></li>
-				</ul>
-			</td>
-		</tr>
-	</table>
+<{include file="admincp_header.htm"}>
+<base target="_blank">
+<body scroll="no">
+<div class="block"></div>
+<table cellspacing="1" cellpadding="4" class="commontable width100">
+<tr class="header"><td>
+<div class="righttop"><{$lan.welcome}>,<{$admin_id}></div>
+<{$lan.siteinfo}>
+</td>
+</tr>
+<tr>
+<td>
+<div class='welcomeright'>
+<!--iframe frameborder="0" scrolling="no" src='http://www.akhtm.com/<{$language}>_dynamic.htm?ver=<{$akversion}>&charset=<{$header_charset}>&theme=<{$theme}>'></iframe-->
 </div>
-<div id="rightinfo" style="width:315px;">
-	<div class="rightinfocontent">
-		<div class="header" style="height:25px;padding:0px;">
-			<span class="headertitle"><{$lan.officialinfo}></span>
-		</div>
-		<div id="rightiframe" style="padding:5px;text-align:center;">
-			<img src="images/admin/loading.gif" style="margin-top:88px;" />
-		</div>
-	</div>
+<{$lan.siteitems}>:<{$items}>
+<br>
+<{$lan.sitepvs}>:<{$pvs}>
+<br>
+<{$lan.siteeditors}>:<{$editors}>
+<br>
+<{$lan.siteattachments}>:<{$attachments}>
+<br>
+<{$lan.siteattachmentsizes}>:<{$attachmentsizes}>
+<br>
+</td>
+</tr>
+</table>
+<div class="block"></div>
+<table cellspacing="1" cellpadding="4" class="commontable width100">
+<tr class="header">
+<td><{$lan.systeminfo}></td>
+</tr>
+<tr>
+<td>
+<div class='welcomeright' style='height:155px;'>
+<!--iframe height="200" frameborder="0" scrolling="no" src='http://www.akhtm.com/<{$language}>_webmaster.htm?ver=<{$akversion}>&charset=<{$header_charset}>&theme=<{$theme}>'></iframe-->
 </div>
-<div style="clear:both;"></div>
-<script type="text/javascript">
-function resizewelcome() {
-	var leftheight = pageHeight() - 50;
-	$("#leftinfo").css('height', leftheight + "px");
-	$("#rightiframe").css('height', pageHeight() - 91 + "px");
-	$("#leftinfo").css('width', pageWidth() - 328 + "px");
-	var faqheight = leftheight - $("#quickoperatetable").height() - $("#siteinfotable").height() - $("#coreinfotable").height() - 56;
-	$("#faq").css('height', faqheight + 'px');
-}
-
-function loadofficialerror() {
-	if(window.online === undefined) {
-		$("#rightiframe").html('<div style="margin-top:88px;"><{$lan.loadofficialerror}></div>');
-	}
-}
-$(document).ready(function(){	
-	$.getScript('http://s.akhtm.com/js/isonline.js?'+Math.random(), function(){
-		if(window.online !== undefined) {
-			$("#rightiframe").html('<iframe id="dyframe" frameborder="0" scrolling="no" src="http://www.akhtm.com/embed/cp1.htm?ver=<{$akversion}>&siteid=<{$siteid}>" style="background:#F8F8F8;height:100%;"></iframe>');
-		} else {
-			loadofficialerror();
-		}
-		$.getScript('index.php?file=welcome&action=checknew&r=' + Math.random());
-	});
-	resizewelcome();
-	$(window).resize(function(){
-		resizewelcome();
-	});
-	setTimeout("loadofficialerror()", 5000);
-});
-</script>
-</body>
+<{$lan.os}>:<{$os}>
+<br>
+<{$lan.phpversion}>:
+<a href="index.php?file=welcome&action=phpinfo" target="_self"><{$phpversion}> phpinfo()</a> 
+(<a href="index.php?file=welcome&action=phpmodules" target='_self'><{$lan.phpmodule}></a>)
+<br>
+<{$lan.dbtype}>:<{$dbtype}>(<{$lan.version}>:<{$dbversion}>)
+<br><{$lan.akversion}>:<{$akversion}>&nbsp;
+<!--(<a href='http://list.qq.com/cgi-bin/qf_invite?id=fdf3604eaca11b4b163f735ceda733e103359eeb032cca38'><{$lan.dingyue}></a>)-->
+<span id="newversion"></span>
+<br>
+<{$lan.maxupload}>:<{$maxupload}>
+<br>
+<{$lan.maxexetime}>:<{$maxexetime}>S
+<br>
+<{$lan.servertime}>:<{$servertime}>
+<br>
+<{$lan.correcttime}>:<{$correcttime}>
+<br>
+</td>
+</tr>
+</table>
+<div class="block"></div>
+</body><!--script src='index.php?file=welcome&action=checknew'></script-->
 </html>

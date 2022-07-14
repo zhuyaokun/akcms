@@ -1,5 +1,6 @@
 <?php
 if(!defined('CORE_ROOT')) exit;
+callruntime('after');
 if(isset($db)) $db->close();
 if(isset($slowopen)) {
 	$etime = explode(' ', microtime());

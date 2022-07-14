@@ -18,50 +18,6 @@ function available($text) {
 	return '<font color="green" title="'.$lan['available'].'"><b>'.$text.'</b></font>';
 }
 
-function shouzimu($string) {
-	$chars = gbk_split($string);
-	$ps = array();
-	foreach($chars as $char) {
-		$p = substr(pinyin($char), 0, 1);
-		$ps[] = $p;
-	}
-	return implode('', $ps);
-}
-
-function fore404() {
-	header("HTTP/1.0 404 Not Found");
-	exit;
-}
-
-function publicip() {
-	$ip = readfromurl('http://api.akhtm.com/myip.php');
-	return $ip;
-}
-
-function dns($domain) {
-	return checkdnsrr($domain);
-}
-
-function generatesiteid() {
-	$publicip = publicip();
-	if(empty($publicip)) $publicip = '127.0.0.1';
-	return substr(md5($publicip), 0, 2).substr(md5(AK_ROOT), 0, 2).random(2);
-}
-
-function checkdbenv() {
-	$return = array();
-	if(function_exists('mysql_connect')) $return['mysql'] = 'MySQL';
-	if(function_exists('sqlite_open')) $return['sqlite'] = 'SQLite'.substr(sqlite_libversion(), 0, 1);
-	if(class_exists('SQLite3')) $return['sqlite3'] = 'SQLite3';
-	if(function_exists('pdo_drivers')) {
-		$pdodrivers = pdo_drivers();
-		foreach($pdodrivers as $d) {
-			$return['pdo:'.$d] = 'pdo:'.$d;
-		}
-	}
-	return $return;
-}
-
 function obj2array($obj) {
 	$var = $obj;
 	if(is_object($var)) $var = get_object_vars($var);
@@ -73,16 +29,7 @@ function obj2array($obj) {
 	return $var;
 }
 
-function dealwithfile($file, $function) {
-	if(!function_exists($function)) return false;
-	if(!file_exists($file) || !is_readable($file) || !is_writable($file)) return false;
-	$content = readfromfile($file);
-	$content = $function($content);
-	writetofile($content, $file);
-}
-
 function aklog($log, $file) {
-	surepathexists($file);
 	$log = $log."\n";
 	if(function_exists('error_log')) {
 		error_log($log, 3, $file);
@@ -95,15 +42,11 @@ function aklog($log, $file) {
 	}
 }
 
-function surepathexists($file) {
-	$path = pathinfo($file);
+function writetofile($text, $filename) {
+	$path = pathinfo($filename);
 	if(!is_dir($path['dirname'])) {
 		ak_mkdir($path['dirname']);
 	}
-}
-
-function writetofile($text, $filename) {
-	surepathexists($filename);
 	if(!$fp = @fopen($filename, 'w')) {
 		aexit('<a href="http://www.akhtm.com/manual/write-permission.htm" target="_blank">Fatal error: '.$filename.' is not writable!</a>');
 		return false;
@@ -134,9 +77,9 @@ function readfromfile($filename) {
 }
 
 function eventlog($log, $type = '', $weight = 10) {
-	global $timedifference, $onlineip, $__callmode, $codekey, $mirrorlogpath;
-	$time = time() + $timedifference * 3600;
-	$logfile = md5($codekey).'/'.$type.date('Ymd', $time).'.log';
+	global $timedifference, $onlineip, $__callmode;
+	$time = time() + $timedifference * 3600 * 24;
+	$logfile = AK_ROOT.'logs/'.$type.date('Ymd').'.log';
 	$time = date('H:i:s', $time);
 	if($__callmode == 'command') {
 		$query = 'command';
@@ -145,8 +88,7 @@ function eventlog($log, $type = '', $weight = 10) {
 		if(!empty($_SERVER['QUERY_STRING'])) $query = $_SERVER['QUERY_STRING'];
 	}
 	if(is_array($log)) $log = serialize($log);
-	aklog($time."\t".$onlineip."\t$query\t".$log, AK_ROOT.'logs/'.$logfile);
-	if(isset($mirrorlogpath)) aklog($time."\t".$onlineip."\t$query\t".$log, $mirrorlogpath.'/'.$logfile);
+	aklog($time."\t".$onlineip."\t$query\t".$log, $logfile);
 }
 
 function ak_mkdir($dirname) {
@@ -157,15 +99,19 @@ function ak_mkdir($dirname) {
 	} else {
 		array_pop($a_path);
 		$path = @implode('/', $a_path);
-		if(!is_dir($path.'/')) ak_mkdir($path);
-		if(!file_exists($dirname)) return @mkdir($dirname);
+		if(is_dir($path.'/')) {
+			return @mkdir($dirname);
+		} else {
+			ak_mkdir($path);
+			return @mkdir($dirname);
+		}
 	}
 }
 
 function ak_touch($file) {
 	$dir = dirname($file);
 	ak_mkdir($dir);
-	return touch($file, thetime());
+	return touch($file);
 }
 
 function ak_copy($source, $target) {
@@ -175,26 +121,23 @@ function ak_copy($source, $target) {
 	return copy($source, $target);
 }
 
-function copydir($dirf, $dirt, $move = 0) {
+function copydir($dirf, $dirt) {
 	if(!is_dir($dirf) || strpos($dirf, '.svn') !== false) return false;
 	$mydir = opendir($dirf);
 	if(!file_exists($dirt)) mkdir($dirt);
 	while($file = readdir($mydir)) {
 		if(strpos($file, '.svn') !== false) continue;
-		if("$dirf/$file" == $dirt) continue;
 		if((is_dir("$dirf/$file")) && ($file!=".") && ($file!="..")) {
-			if(!copydir("$dirf/$file", "$dirt/$file", $move)) return false;
-			if($move == 1 && strpos("$dirt/$file", "$dirf/$file") === false) ak_rmdir("$dirf/$file");
+			if(!copydir("$dirf/$file","$dirt/$file")) return false;
 		} elseif(is_file("$dirf/$file")) {
-			if(!copy("$dirf/$file", "$dirt/$file")) return false;
-			if($move == 1) unlink("$dirf/$file");
+			if(!copy("$dirf/$file","$dirt/$file")) return false;
 		}
 	}
 	return true;
 }
 
 function debug($variable, $exit = 0, $type = 0) {
-	global $__callmode, $header_charset, $pid;
+	global $__callmode, $header_charset;
 	if('command' == $__callmode) $type = 3;
 	if(is_object($variable)) {
 		$objflag = 1;
@@ -212,7 +155,7 @@ function debug($variable, $exit = 0, $type = 0) {
 	if($type == 0) {
 		$info = str_replace("\n", '<br>', $info);
 		$info = str_replace(" ", '&nbsp;', $info);
-		echo "<div style=\"border:1px dashed #222222;margin:2px;font: 12px Verdana;line-height: 20px;background-color: #FFFFE0;padding: 10px;text-align:left;\">".$info."</div>";
+		echo "<div style=\"border:1px dashed #222222;margin:2px;font: 12px Verdan;line-height: 20px;background-color: #FFFFE0;padding: 10px;text-align:left;\">".$info."</div>";
 	} elseif($type == 1) {
 		$info = str_replace("\n", '\n', $info);
 		echo "<html><head><meta http-equiv='Content-Type' content='text/html; charset={$header_charset}' />";
@@ -221,7 +164,7 @@ function debug($variable, $exit = 0, $type = 0) {
 		$info = str_replace("\n", '\n', $info);
 		echo "alert(\"".$info."\");";
 	} elseif($type == 3) {
-		echo("#$pid\t".$info."\n");
+		echo($info."\n");
 	}
 	if($exit == 1) {
 		if(function_exists('aexit')) aexit('');
@@ -255,13 +198,17 @@ function a_is_int($number) {
 	return preg_match ("/^([0-9]+)$/", $number);
 }
 
-function random($length, $chars = '') {
-	if(PHP_VERSION < '4.2') mt_srand();
-	$hash = '';
-	if($chars == '') $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz';
-	$max = strlen($chars) - 1;
-	for($i = 0; $i < $length; $i++) {
-		$hash .= $chars[mt_rand(0, $max)];
+function random($length, $numeric = 0) {
+	mt_srand((double)microtime() * 1000000);
+	if($numeric) {
+		$hash = sprintf('%0'.$length.'d', mt_rand(0, pow(10, $length) - 1));
+	} else {
+		$hash = '';
+		$chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz';
+		$max = strlen($chars) - 1;
+		for($i = 0; $i < $length; $i++) {
+			$hash .= $chars[mt_rand(0, $max)];
+		}
 	}
 	return $hash;
 }
@@ -413,29 +360,27 @@ function htmltitle($title, $color = '', $style = '') {
 	return $output;
 }
 
-function displaytemplate($template, $variables = array()) {
-	global $lan, $_vc;
-	createpathifnotexists(AK_ROOT."cache/templates");
-	$tpl = new tpl(array(AK_ROOT.'configs/templates', CORE_ROOT.'templates'), AK_ROOT.'cache/templates');
-	$variables['vc'] = $_vc;
-	if(empty($jquery)) $jquery = CORE_URL.'include/jquery.js';
-	$variables['jquery'] = $jquery;
-	$variables['lan'] = $lan;
-	$variables['sysname'] = $GLOBALS['sysname'];
-	$variables['sysedition'] = $GLOBALS['sysedition'];
-	$variables['charset'] = $variables['header_charset'] = $GLOBALS['header_charset'];
-	$variables['ak_url'] = AK_URL;
-	$variables['core_url'] = CORE_URL;
-	if(!empty($GLOBALS['setting_sitename'])) $variables['sitename'] = $GLOBALS['setting_sitename'];
-	$variables['customcss'] = 0;
-	$variables['get'] = $_GET;
-	$variables['post'] = $_POST;
-	if(file_exists(AK_ROOT.'configs/customer.css')) $variables['customcss'] = 1;
-	$tpl->assign($variables);
-	$tpl->regfunction('h');
-	$tpl->regfunction('mu');
-	$html = $tpl->render($template);
-	echo $html;
+function displaytemplate($template) {
+	global $smarty, $lan;
+	if(file_exists(AK_ROOT.'configs/templates/'.$template)) $templatefilename = $template = AK_ROOT.'configs/templates/'.$template;
+	$smarty->template_dir = CORE_ROOT."templates";
+	$smarty->assign('lan', $lan);
+	if(!isset($templatefilename)) $templatefilename = $smarty->template_dir.'/'.$template;
+	$smarty->compile_dir = AK_ROOT."cache/templates";
+	$smarty->config_dir = AK_ROOT."configs/";
+	$smarty->cache_dir = AK_ROOT."cache/";
+	$smarty->left_delimiter = "<{";
+	$smarty->right_delimiter = "}>";
+	$smarty->error_reporting = true;
+	$smarty->assign('sysname', $GLOBALS['sysname']);
+	$smarty->assign('sysedition', $GLOBALS['sysedition']);
+	$smarty->assign('header_charset', $GLOBALS['header_charset']);
+	$smarty->assign('ak_url', AK_URL);
+	$smarty->assign('core_url', CORE_URL);
+	$smarty->assign('language', $GLOBALS['language']);
+	if(!empty($GLOBALS['setting_sitename'])) $smarty->assign('sitename', $GLOBALS['setting_sitename']);
+	if(file_exists(AK_ROOT.'configs/customer.css')) $smarty->assign('customcss', 1);
+	$smarty->display($template);
 }
 
 function ak_utf8_encode($var) {
@@ -446,9 +391,7 @@ function ak_utf8_encode($var) {
 		}
 		return $var;
 	} else {
-		$result = iconv('GBK', 'UTF-8//IGNORE', $var);
-		if($result === false) return $var;
-		return $result;
+		return iconv('GBK', 'UTF-8//IGNORE', $var);
 	}
 }
 
@@ -460,9 +403,7 @@ function utf8togbk($var) {
 		}
 		return $var;
 	} else {
-		$result = iconv('UTF-8', 'GBK//IGNORE', $var);
-		if($result === false) return $var;
-		return $result;
+		return iconv('UTF-8', 'GBK//IGNORE', $var);
 	}
 }
 
@@ -491,19 +432,6 @@ function tidyitemlist($str, $separator = ',', $int = 1) {
 	return implode($separator, $array2);
 }
 
-function confirm($message, $confirm = '', $cancel = '') {
-	$html = <<<EOF
-<script>
-if(confirm("$message")) {
-	location = "$confirm";
-} else {
-	location = "$cancel";
-}
-</script>
-EOF;
-	aexit($html);
-}
-
 function ak_substr($str, $start, $len = 0xFFFFFFFF, $strip = '', $charset_force = '') {
 	global $charset;
 	$old_length = strlen($str);
@@ -525,21 +453,6 @@ function ak_substr($str, $start, $len = 0xFFFFFFFF, $strip = '', $charset_force 
 		$return .= $strip;
 	}
 	return $return;
-}
-
-function gbk_split($string) {
-	$strlen = strlen($string);
-	$outputs = array();
-	for($i = 0; $i < $strlen; $i++) {
-		if(ord($string[$i]) >= 161 && ord($string[$i]) <= 247 && ord($string[$i+1]) >= 161 && ord($string[$i+1]) <= 254) {
-			$output = substr($string, $i, 2);
-			$i ++;
-		} else {
-			$output = substr($string, $i, 1);
-		}
-		$outputs[] = $output;
-	}
-	return $outputs;
 }
 
 function gbk_substr($str, $start, $len=0xFFFFFFFF) {
@@ -581,7 +494,7 @@ function utf8_substr($str, $start, $len) {
 	return join($new_str);
 }
 
-function ak_replace($find, $replace, $str, $caseless = 1, $count = -1) {//$caselessÊÇ·ñÇø·Ö´óÐ¡Ð´£¬0Îª²»Çø·Ö
+function ak_replace($find, $replace, $str, $caseless = 1, $count = -1) {//$caselessæ˜¯å¦åŒºåˆ†å¤§å°å†™ï¼Œ0ä¸ºä¸åŒºåˆ†
 	if(!is_array($find)) {
 		$find = array($find);
 	}
@@ -627,7 +540,7 @@ function str_replace_count($search, $replace, $string, $count) {
 
 function str_replace_once($search, $replace, $string) {
 	$pos = strpos($string, $search);
-	if($pos === false) return $string;
+	if($pos === false) return true;
 	$return = '';
 	$s1 = substr($string, 0, $pos);
 	$s2 = substr($string, $pos + strlen($search));
@@ -670,10 +583,6 @@ function getfield($start, $end, $content, $repeatsplit = '') {
 	return $return;
 }
 
-function _htmlspecialchars(&$array) {
-	$array = ak_htmlspecialchars($array);
-}
-
 function ak_htmlspecialchars($array) {
 	global $charset;
 	if(!is_array($array) && !is_object($array)) {
@@ -686,9 +595,15 @@ function ak_htmlspecialchars($array) {
 		} elseif(is_object($value)) {
 			$array[$key] = ak_htmlspecialchars(get_object_vars($value));
 		} elseif(is_scalar($value)) {
+			/*
+			$value = str_replace('&', '&amp;', $value);
+			$value = str_replace('"', '&quot;', $value);
+			$value = str_replace('\'', '&#039;', $value);
+			$value = str_replace('<', '&lt;', $value);
+			$value = str_replace('>', '&gt;', $value);
+			*/
 			if($charset == 'gbk' && PHP_VERSION > '5.4') {
-				$value = htmlspecialchars($value, ENT_SUBSTITUTE, 'ISO-8859-1');
-				$value = str_replace('"', '&quot;', $value);
+				$value = htmlspecialchars($value, ENT_SUBSTITUTE, 'gb2312');
 			} else {
 				$value = htmlspecialchars($value);
 			}
@@ -718,15 +633,11 @@ function ak_md5($string, $short = 0, $time = 1) {
 	return substr($string, 8, 16);
 }
 
-function createpathifnotexists($path) {
-	if(!file_exists($path)) ak_mkdir($path);
-}
-
 function readpathtoarray($path, $shortfilename = 0) {
 	$return = array();
 	if(!file_exists($path)) return $return;
 	$fp = opendir($path);
-	while(false !== ($file = readdir($fp))) {
+	while (false !== ($file = readdir($fp))) {
 		if($file == '.' || $file == '..') continue;
 		if($shortfilename == 1) {
 			$return[] = $file;
@@ -742,50 +653,16 @@ function readpathtoarray($path, $shortfilename = 0) {
 	return $return;
 }
 
-function emptyfileindir($path) {
-	$files = readpathtoarray($path);
-	foreach($files as $k => $v) {
-		unlink($v);
-	}
-}
-
-function cutstring($string, $length, $true = '', $false = '') {
-	$result = ak_substr($string, 0, $length);
-	if($result == $string) {
-		return $result.$false;
-	} else {
-		return $result.$true;
-	}
-}
-
 function getwee($dateline = 0, $type = 'day') {
 	global $thetime;
 	empty($dateline) && $dateline = $thetime;
-	list($year, $month, $day, $week) = explode('#', date('Y#m#d#w', $dateline));
+	list($year, $month, $day) = explode('-', date('Y-m-d', $dateline));
 	if($type == 'day') {
 		return mktime(0, 0, 0, $month, $day, $year);
 	} elseif($type == 'month') {
 		return mktime(0, 0, 0, $month, 1, $year);
 	} elseif($type == 'year') {
 		return mktime(0, 0, 0, 1, 1, $year);
-	} elseif($type == 'week') {
-		return mktime(0, 0, 0, $month, $day, $year) - $week * 86400;
-	}
-}
-
-function unique($name, $value) {
-	if(!isset($GLOBALS['unique'])) $GLOBALS['unique'] = array();
-	if(!isset($GLOBALS['unique'][$name])) $GLOBALS['unique'][$name] = array();
-	if(in_array($value, $GLOBALS['unique'][$name])) return false;
-	$GLOBALS['unique'][$name][] = $value;
-	return true;
-}
-
-function clearunique($name = '') {
-	if($name == '') {
-		if(isset($GLOBALS['unique'])) unset($GLOBALS['unique']);
-	} else {
-		if(isset($GLOBALS['unique'][$name])) unset($GLOBALS['unique'][$name]);
 	}
 }
 
@@ -831,32 +708,22 @@ function whospider() {
 	return false;
 }
 
-function readfromurl($url, $convertcharset = 0, $type = '', $ext = array()) {
+function readfromurl($url, $convertcharset = 0, $type = '') {
 	global $charset;
-	$url = trim($url);
 	if($type == '') $type = whospider();
 	$agent = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; AKCMS)';
 	if($type == 'wget') {
 		$_tmp = AK_ROOT.'cache/'.md5($url);
 		system("wget --timeout=10 --tries=3 --no-check-certificate --user-agent=\"$agent\" -q -O {$_tmp} \"".$url."\"");
 		$content = readfromfile($_tmp);
-		@akunlink($_tmp);
+		@unlink($_tmp);
 	} elseif($type == 'curl') {
 		$ch = curl_init();
 		@curl_setopt($ch, CURLOPT_ENCODING, '');
 		curl_setopt($ch, CURLOPT_URL, $url);
-		if(!empty($ext['cookie'])) {
-			$cookies = array();
-			foreach($ext['cookie'] as $key => $value) {
-				$cookies[] = "$key=$value";
-			}
-			$cookie = implode('; ', $cookies);
-			curl_setopt($ch, CURLOPT_COOKIE, $cookie);
-		}
 		curl_setopt($ch, CURLOPT_HEADER, 0);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		@curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 60);
 		curl_setopt($ch, CURLOPT_USERAGENT, $agent);
 		$content = curl_exec($ch);
 		curl_close($ch);
@@ -931,11 +798,6 @@ function akmicrotime() {
 	return number_format($s.$ms, 4, '.', '');
 }
 
-function thetime() {
-	global $timedifference;
-	return time() + $timedifference * 3600;
-}
-
 function monitor($sign = '', $id = 0) {
 	global $exe_times, $exe_signs, $exe_mems;
 	if(is_array($sign)) $sign = reset($sign);
@@ -976,10 +838,6 @@ function msformat($number) {
 	return number_format($number, 4, '.', '');
 }
 
-function nb($number) {
-	return number_format($number, 2, '.', '');
-}
-
 function ak_filetime($filename) {
 	global $timedifference;
 	return filemtime($filename) + $timedifference * 3600;
@@ -1001,7 +859,7 @@ function ak_rmdir($dir) {
 			if(is_dir("$dir/$item")) {
 				ak_rmdir("$dir/$item");
 			} else {
-				@akunlink("$dir/$item");
+				unlink("$dir/$item");
 			}
 		}
 	}
@@ -1010,26 +868,10 @@ function ak_rmdir($dir) {
 	}
 }
 
-function getdomain($url) {
-	$string = getfield('://', '', $url);
-	if(strpos($string, '/') === false) return $string;
-	return getfield('', '/', $string);
-}
-
-function getrootdomain($domain) {
-	$fields = explode('.', $domain);
-	$l = count($fields);
-	if($l < 2) return '';
-	$lastfield = $fields[$l - 1];
-	if(strlen($lastfield) > 2) return $fields[$l - 2].'.'.$fields[$l - 1];
-	if(strlen($lastfield) < 2) return '';
-	$last2field = $fields[$l - 2];
-	if(in_array($last2field, array('com', 'net', 'org', 'edu', 'gov'))) {
-		if($l > 2 && $fields[$l - 3] != 'www') {
-			return $fields[$l - 3].'.'.$last2field.'.'.$lastfield;
-		}
-	}
-	return $last2field.'.'.$lastfield;
+function getdomain($url) {//ä»Žurlä¸­æˆªå–åŸŸå
+	$p1 = strpos($url, '://') + 3;
+	$p2 = strpos($url, '/', $p1);
+	return substr($url, $p1, $p2 - $p1);
 }
 
 function geturlpath($url) {
@@ -1083,20 +925,6 @@ function sortbylength($array) {
 		$return[] = $array[$key];
 	}
 	return $return;
-}
-
-function sortbyfield($array, $field, $sort = 'desc') {
-	$f = array();
-	foreach($array as $k => $v) {
-		$f[$k] = $v[$field];
-	}
-	if($sort == 'desc') {
-		$sort = 3;
-	} else {
-		$sort = 4;
-	}
-	array_multisort($f, $sort, $array);
-	return $array;
 }
 
 function calfilenamefromurl($url) {
@@ -1231,7 +1059,6 @@ function sqlite_createtable($key, $data) {
 
 function lan($charset, $language = 'english') {
 	if($language == 'english') $charset = 'english';
-	if($charset == '') $charset = 'gbk';
 	$languagefilename = CORE_ROOT."include/language/{$language}/{$charset}.lan";
 	if(!file_exists($languagefilename)) aexit($charset.$language.' language not exist');
 	$lan = array();
@@ -1240,7 +1067,6 @@ function lan($charset, $language = 'english') {
 	foreach($array as $_line) {
 		$_fields = explode("\t", $_line);
 		if(count($_fields) != 2) continue;
-		$_fields[1] = preg_replace("/<link:([a-zA-Z0-9\-]+)>(.+?)<\/link>/i", "<a href='http://www.akhtm.com/manual/\\1.htm?source=cp' target='_blank'>\\2</a>", $_fields[1]);
 		$lan[$_fields[0]] = $_fields[1];
 	}
 	return $lan;
@@ -1360,30 +1186,13 @@ function ak_strtotime($str) {
 }
 
 function ak_if($variable, $if, $else = '') {
+	return '';
 	eval('$result = '.$variable.';');
 	if(!empty($result)) {
 		return $if;
 	} else {
 		return $else;
 	}
-}
-
-function ak_ifnotempty($variable, $if, $else = '') {
-	if($variable != '') {
-		return $if;
-	} else {
-		return $else;
-	}
-}
-
-function httpget($v) {
-	if(isset($_GET[$v])) return $_GET[$v];
-	return '';
-}
-
-function httppost($v) {
-	if(isset($_POST[$v])) return $_POST[$v];
-	return '';
 }
 
 function sendmail($to, $subject, $html) {
@@ -1564,13 +1373,7 @@ function ExtractFile($header, $to, $fp) {
 		$binary_data = pack('VV', $header['crc'], $header['size']);
 		fwrite($nfp, $binary_data,8);
 		fclose($nfp);
-		if(function_exists('gzopen')) {
-			$gzp = gzopen($to.'.gz', 'rb');
-		} elseif(function_exists('gzopen64')) {
-			$gzp = gzopen64($to.'.gz', 'rb');
-		} else {
-			exit('error:gzopen disabled!');
-		}
+		$gzp = gzopen($to.'.gz', 'rb');
 		if(!$gzp) return(-2);
 		$nfp = fopen($to, 'wb');
 		if(!$nfp) return(-1);
@@ -1584,7 +1387,7 @@ function ExtractFile($header, $to, $fp) {
 		}
 		fclose($nfp);
 		gzclose($gzp);
-		akunlink($to.'.gz');
+		unlink($to.'.gz');
 	}
 	return true;
 }
@@ -1625,99 +1428,62 @@ function urlencode_rfc3986($input) {
 	}
 }
 
-function aksetcookie($name, $value, $expire = 0, $fore = 0) {
-	global $cookiepre, $currenturl;
-	$domain = $_SERVER['HTTP_HOST'];
-	if($fore == 0) {
-		$key = md5($domain.'_'.$cookiepre.'_'.$name.'_cp');
-	} else {
-		$key = md5($domain.'_'.$cookiepre.'_'.$name.'_fore');
-	}
-	$key = 'ak_'.$key;
-	return setcookie($key, $value, $expire);
+function aksetcookie($name, $value, $expire = 0) {
+	global $cookiepre;
+	return setcookie($cookiepre.'_'.$name, $value, $expire);
 }
 
-function akgetcookie($name, $fore = 0) {
-	global $cookiepre, $currenturl;
-	$domain = $_SERVER['HTTP_HOST'];
-	if($fore == 0) {
-		$key = md5($domain.'_'.$cookiepre.'_'.$name.'_cp');
+function akgetcookie($name) {
+	global $cookiepre;
+	if(isset($_COOKIE[$cookiepre.'_'.$name])) {
+		return $_COOKIE[$cookiepre.'_'.$name];
 	} else {
-		$key = md5($domain.'_'.$cookiepre.'_'.$name.'_fore');
+		return false;
 	}
-	$key = 'ak_'.$key;
-	if(!isset($_COOKIE[$key])) return false;
-	return $_COOKIE[$key];
 }
 
 function xml2array($xml) {
 	$parser = xml_parser_create();
-	xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
-	xml_parser_set_option($parser, XML_OPTION_SKIP_WHITE, 1);
-	$result = xml_parse_into_struct($parser, $xml, $tags, $values);
+	$result = xml_parse_into_struct($parser, $xml, $tags);
 	$return = array();
-	$a = $k = array();
+	$a = array();
+	$a[1] = &$return;
 	foreach($tags as $r) {
-		$level = $r['level'];
-		$type = $r['type'];
+		if($r['type'] == 'close') continue;
 		$tag = strtolower($r['tag']);
-		if($level == 1 && $type == 'open') {
-			$k[1] = $tag;
-			$a[1] = array($tag => array());
+		if($r['type'] == 'complete') {
+			$a[$r['level']][$tag] = isset($r['value']) ? $r['value'] : '';
+		} else {
+			$a[$r['level']][$tag] = array();
 		}
-		if($type == 'close' && $level > 1) {
-			if(isset($a[$level - 1][$k[$level]])) {
-				if($level > 1 && (!is_array($a[$level - 1][$k[$level]]) || (!empty($a[$level - 1][$k[$level]]) && !isset($a[$level - 1][$k[$level]][0])))) {
-					$a[$level - 1][$k[$level]] = array($a[$level - 1][$k[$level]]);
-				}
-				$a[$level - 1][$k[$level]][] = $a[$level];
-			} else {
-				$a[$level - 1][$k[$level]] = $a[$level];
-			}
-			unset($a[$level]);
-		}
-		if($type == 'complete') {
-			$a[$level - 1][$tag] = isset($r['value']) ? fromutf8($r['value']) : '';
-		} elseif($type == 'open') {
-			$a[$level] = array();
-			$k[$level] = $r['tag'];
-		}
+		if($r['type'] == 'open') $a[$r['level'] + 1] = &$a[$r['level']][$tag];
 	}
 	xml_parser_free($parser);
-	return $a[1];
+	return $return;
 }
 
-function toutf8(&$text) {
+function toutf8($text) {
 	global $charset;
-	if($charset == 'gbk') $text = gbktoutf8($text);
+	if($charset == 'gbk') return gbktoutf8($text);
 	return $text;
 }
 
 function fromutf8($text) {
 	global $charset;
-	if($charset == 'gbk') $text = utf8togbk($text);
+	if($charset == 'gbk') return utf8togbk($text);
 	return $text;
 }
 
 function togbk($text) {
 	global $charset;
-	if($charset == 'utf8') $text = utf8togbk($text);
-	return $text;
-}
-
-function fromgbk($text) {
-	global $charset;
-	if($charset == 'utf8') $text = gbktoutf8($text);
+	if($charset == 'utf8') return utf8togbk($text);
 	return $text;
 }
 
 function akheader($head) {
+	global $db;
+	if(isset($db)) $db->close();
 	header($head);
-	aexit();
-}
-
-function aklocation($url) {
-	aexit("<script>location='".$url."';</script>");
 }
 
 function isemail($email) {
@@ -1737,13 +1503,72 @@ function getcookiesfromheader($header) {
 	return $cookies;
 }
 
+function httppost($url, $params, $cookies = array(), $headers = array()) {
+	if(empty($headers['agent'])) {
+		$agent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.2.13) AKCMS';
+	} else {
+		$agent = $headers['agent'];
+	}
+	$referer = '';
+	if(!empty($headers['Referer'])) $referer = $headers['Referer'];
+	$parts = parse_url($url);
+	$host = $parts['host'];
+	$post = $parts['path'];
+	if(!empty($parts['query'])) $post.='?'.$parts['query'];
+	$str = '';
+	foreach($params as $k => $v) {
+		$str .= '&'.$k.'='.urlencode($v);
+	}
+	$str = substr($str, 1);
+	$header = '';
+	$header .= "POST {$post} HTTP/1.1\r\n";
+	$header .= "Host: {$host}\r\n";
+	$header .= "Content-type: application/x-www-form-urlencoded\r\n";
+	$header .= "X-Requested-With: XMLHttpRequest\r\n";
+	$header .= "User-Agent: {$agent}\r\n";
+	$header .= "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n";
+	$header .= "Accept-Language: zh-cn,zh;q=0.5\r\n";
+	$header .= "Accept-Encoding: deflate\r\n";
+	$header .= "Accept-Charset: GB2312,utf-8;q=0.7,*;q=0.7\r\n";
+	$header .= "Keep-Alive:115\r\n";
+	$header .= "Connection:keep-alive\r\n";
+	$header .= "Referer: $referer\r\n";
+	$header .= "Content-length:".strlen($str);
+	if(!empty($cookies)) {
+		$cs = array();
+		foreach($cookies as $k => $v) {
+			$cs[] = "$k=$v";
+		}
+		$header .= "\r\nCookie: ".implode("; ", $cs);
+	} elseif(isset($headers['Cookie'])) {
+		$header .= "\r\nCookie: ".$headers['Cookie'];
+	}
+	$header .= "\r\nCache-Control: max-age=0";
+	$port = 80;
+	if($parts['scheme'] == 'https') $port = 443;
+	if($parts['scheme'] == 'https') {
+		$sHnd = fsockopen("ssl://".$host, $port, $errno, $errstr, 30);
+	} else {
+		$sHnd = fsockopen($host, $port, $errno, $errstr, 30);
+	}
+	fputs($sHnd, $header."\r\n\r\n");
+	fputs($sHnd, $str);
+	$content = '';
+	$i = 1;
+	while(!feof($sHnd)) {
+		$content .= fgets($sHnd, 4096);
+		$i ++;
+	}
+	$cookies = getcookiesfromheader(getfield('', "\r\n\r\n", $content));
+	$content = getfield("\r\n\r\n", '', $content);
+	return array('content' => $content, 'cookies' => $cookies);
+}
+
 function ifinstalled() {
 	return file_exists(AK_ROOT.'configs/install.lock');
 }
 
 function setinstalled() {
-	global $sysedition;
-	setsetting('dataversion', $sysedition);
 	ak_touch(AK_ROOT.'configs/install.lock');
 }
 
@@ -1761,9 +1586,8 @@ function preg_replace_prepare($replace) {
 
 function setsetting($variable, $value) {
 	global $db;
-	if(empty($db)) $db = db();
 	$db->replaceinto('settings', array('variable' => $variable, 'value' => $value), 'variable');
-	updatecache('settings');
+	
 }
 
 function parselinks($html) {
@@ -1777,6 +1601,17 @@ function parselinks($html) {
 		$links[$link] = $title;
 	}
 	return $links;
+}
+
+function getinitial($string) {
+	require_once(CORE_ROOT.'include/pinyin.func.php');
+	$pinyin = core_pinyin($string);
+	return substr($pinyin, 0, 1);
+}
+
+function pinyin($string) {
+	require_once(CORE_ROOT.'include/pinyin.func.php');
+	return core_pinyin($string);
 }
 
 function encodeip($ip) {
@@ -1814,259 +1649,5 @@ function pictureurl($filename, $prefix = '') {
 	if($prefix == '') $prefix = $homepage;
 	if(strpos($filename, 'http://') !== 0) $filename = $homepage.$filename;
 	return $filename;
-}
-
-function hashfilename($keyword, $layer = 3) {
-	$md5 = md5($keyword);
-	$path = '';
-	for($i = 0; $i < $layer; $i ++) {
-		$path .= $md5[$i].'/';
-	}
-	return $path.$md5;
-}
-
-function space2dash($text) {
-	return trim(preg_replace("/([^0-9A-Za-z]+)/i", '-', $text), '-');
-}
-
-function akerror($errno, $errstr, $errfile, $errline) {
-	if($errno < 4) {
-		if(strlen($errstr) > 6 && substr($errstr, 0, 6) == 'unlink') return false;
-		if(strpos($errstr, 'CURLOPT_FOLLOWLOCATION') !== false) return false;
-		eventlog("$errno\t$errline\t$errstr\t$errfile", "error");
-	}
-}
-
-function akunlink($filename) {
-	if(file_exists($filename) && is_writable($filename)) return unlink($filename);
-	return false;
-}
-
-function ak_return($message, $errno = 0) {
-	return array('errno' => $errno, 'message' => $message);
-}
-
-function app_encode($value) {
-	$value = toutf8($value);
-	return json_encode($value);
-}
-
-function app_decode($value) {
-	$value = json_decode($value, 1);
-	$value = fromutf8($value);
-	return $value;
-}
-
-function generatefilename($basename, $layer) {
-	if($layer > strlen($basename)) return false;
-	$filename = '';
-	for($i = 0; $i < $layer; $i ++) {
-		$filename .= substr($basename, $i, 1).'/';
-	}
-	return $filename.$basename;
-}
-
-function calrelativeurl($baseurl, $targeturl) {
-	if($targeturl == '' || $baseurl == '') return false;
-	if(strpos($targeturl, 'http://') === 0) return $targeturl;
-	if(substr($targeturl, 0, 1) != '/') $targeturl = '/'.$targeturl;
-	$urlinfo = parse_url($baseurl);
-	if(!isset($urlinfo['path']) || $urlinfo['path'] == '/') return $targeturl;
-	$baseurl = $urlinfo['path'];
-	if(substr($baseurl, 0, 1) != '/') $baseurl = '/'.$baseurl;
-	$l = min(strlen($baseurl), strlen($targeturl));
-	for($i = 1; $i < $l; $i ++) {
-		$_o1 = strpos(substr($baseurl, $i), '/');
-		$_o2 = strpos(substr($targeturl, $i), '/');
-		if($_o1 != $_o2) break;
-		if(substr($baseurl, 0, $o1) != substr($targeturl, 0, $o1)) break;
-	}
-	$_string = substr($baseurl, $i);
-	$layer = substr_count($_string, '/');
-	$j = strrpos(substr($targeturl, 0, $i), '/');
-	$returnurl = str_repeat('../', $layer).substr($targeturl, $j + 1);
-	if(empty($returnurl)) $returnurl = './';
-	return $returnurl;
-}
-
-function calrealurl2($baseurl, $targeturl) {
-	if($targeturl == '' || $baseurl == '') return false;
-	if(strpos($targeturl, 'http://') === 0) return $targeturl;
-	if(substr($targeturl, 0, 1) != '/') {
-		
-	} else {
-		
-	}
-	$urlinfo = parse_url($baseurl);
-	if(!isset($urlinfo['path']) || $urlinfo['path'] == '/') return $targeturl;
-	$baseurl = $urlinfo['path'];
-	if(substr($baseurl, 0, 1) != '/') $baseurl = '/'.$baseurl;
-	$l = min(strlen($baseurl), strlen($targeturl));
-	for($i = 1; $i < $l; $i ++) {
-		$_o1 = strpos(substr($baseurl, $i), '/');
-		$_o2 = strpos(substr($targeturl, $i), '/');
-		if($_o1 != $_o2) break;
-		if(substr($baseurl, 0, $o1) != substr($targeturl, 0, $o1)) break;
-	}
-	$_string = substr($baseurl, $i);
-	$layer = substr_count($_string, '/');
-	$j = strrpos(substr($targeturl, 0, $i), '/');
-	$returnurl = str_repeat('../', $layer).substr($targeturl, $j + 1);
-	if(empty($returnurl)) $returnurl = './';
-	return $returnurl;
-}
-
-function fetchlocation($url) {
-	$agent = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; AKCMS)';
-	$offset = strpos($url, '://');
-	if($offset === false) return false;
-	if(strpos($url, '/', $offset + 3) === false) $url .= '/';
-	$parts = parse_url($url);
-	$host = $parts['host'];
-	$port = 80;
-	if($parts['scheme'] == 'https') $port = 443;
-	$path = $parts['path'];
-	if(!empty($parts['query'])) $path .= "?".$parts['query'];
-	$request =  "GET ".$path." HTTP/1.0\r\n";
-	$request .= "Host: ".$host."\r\n";
-	$request .= "Accept: */*\r\n";
-	$request .= "Connection: keep-alive\r\n";
-	$request .= "User-Agent: {$agent}\r\n\r\n";
-	if($parts['scheme'] == 'https') {
-		$sHnd = fsockopen("ssl://".$host, $port, $errno, $errstr, 30);
-	} else {
-		$sHnd = fsockopen($host, $port, $errno, $errstr, 30);
-	}
-	if($sHnd === false) {
-		debug($errstr);
-		return false;
-	}
-	fputs($sHnd, $request);
-	$content = '';
-	while(!feof($sHnd)) {
-		if(!isset($step)) $step = 4096;
-		$line = fgets($sHnd, $step + 1);
-		if(strpos($line, 'Location:') === 0) {
-			$return = substr(trim($line), 10);
-			break;
-		}
-	}
-	fclose($sHnd);
-	if(isset($return)) return $return;
-	return false;
-}
-
-function stamptotime($time) {
-	return date('Y-m-d H:i:s', $time);
-}
-
-function stamptodate($time) {
-	return date('Y-m-d', $time);
-}
-
-function mergeurl($query, $url = '') {
-	global $currenturl;
-	if($url == '') $url = $currenturl;
-	$info = parse_url($url);
-	if(!isset($info['query'])) $info['query'] = '';
-	parse_str($info['query'], $_query1);
-	parse_str($query, $_query2);
-	$_query = array_merge($_query1, $_query2);
-	return $info['path'].'?'.http_build_query($_query);
-}
-
-function mu($params) {
-	if(!isset($params['t'])) echo '';
-	echo mergeurl($params['t']);
-}
-
-function renderinput($name, $type = 'string', $standby = '', $value = '', $style = '') {
-	global $lan;
-	$input = '';
-	if($type == 'string') {
-		if($style == '') $style = 'width:90%;';
-		$input = '<input type="text" name="'.$name.'" value="'.ak_htmlspecialchars($value).'" style="'.$style.'">';
-	} elseif($type == 'int') {
-		$input = '<input type="text" name="'.$name.'" value="'.ak_htmlspecialchars($value).'" size="15">';
-	} elseif($type == 'pass') {
-		$input = '<input type="password" name="'.$name.'" value="'.$value.'" size="50">';
-	} elseif($type == 'radio' || $type == 'checkbox') {
-		$options = parsestandby($standby);
-		$values = explode(',', $value);
-		foreach($options as $_value => $_text) {
-			$checked = '';
-			if(in_array($_value, $values)) $checked = ' checked';
-			$key = md5($_value);
-			$input .= "<input type='$type' name='{$name}[]' id='{$name}_{$key}' value='$_value'$checked>&nbsp;<label for='{$name}_{$key}'>$_text</label>&nbsp;";
-		}
-	} elseif($type == 'text') {
-		$input = "<textarea name='$name' style='width:500px;height:100px;'>$value</textarea>";
-	} elseif($type == 'richtext') {
-		$input = editor($name, 'rich', $value);
-	} elseif($type == 'category') {
-		$input = "<select id='$name' name='{$name}'>".get_select('category').'</select><script>$(document).ready(function(){$("#'.$name.'").val('.$value.');});</script>';
-	} elseif($type == 'categories') {
-		$input = "<select id='$name' name='{$name}[]' multiple style='height:88px;'>".get_select('category');
-		if(strpos($value,',') === false) $value = "'".$value."'";
-		$input .= "</select><script>function ifchecked{$name}(obj) {ids = new Array($value);for(i=0;i<ids.length;i++){if(ids[i]==obj.val()){obj.attr('selected','selected');}}}$('#{$name}').children().each(function(){ifchecked{$name}(\$(this));});</script>";
-	} elseif($type == 'section') {
-		$input = "<select id='$name' name='{$name}'>".get_select('section').'</select><script>$(document).ready(function(){$("#$name").val($value);});</script>';
-	} elseif($type == 'template') {
-		$input = "<select id='$name' name='{$name}'><option value=''>{$lan['pleasechoose']}</option>".get_select_templates().'</select><script>$(document).ready(function(){$("#'.$name.'").val("'.$value.'");});</script>';
-	} elseif($type == 'picture') {
-		$input = "<table><tr><td>{$lan['pictureurl']}:<input type='text' name='{$name}' value='{$value}' size='50'>";
-		if(!empty($value)) {
-			$value = pictureurl($value);
-			$input .= " <a href='$value' target='_blank'>{$lan['preview']}</a>";
-		}
-		$input .= "</td></tr><tr><td>{$lan['or']}</td></tr><tr><td>{$lan['uploadpicture']}:<input type='file' name='{$name}_upload' value=''></td></tr></table>";
-	} elseif($type == 'select') {
-		$options = parsestandby($standby);
-		$input .= "<select id='{$name}' name='{$name}'>";
-		$values = explode(',', $value);
-		foreach($options as $_value => $_text) {
-			$checked = '';
-			if(in_array($_value, $values)) $checked = ' selected="selected"';
-			$input .= "<option value='{$_value}'$checked>$_text</option>&nbsp;";
-		}
-		$input .= "</select>";
-	}
-	return $input."\n";
-}
-
-function foremessage($message, $target = '') {
-	echo "<script>alert('".htmlspecialchars($message)."');";
-	if($target != '') {
-		if($target == 'back') {
-			echo "history.go(-1);";
-		} else {
-			echo "location='$target';";
-		}
-	}	
-	aexit("</script>");
-}
-
-function parsestandby($input) {
-	$return = array();
-	if(preg_match("/^\[([\*a-z_]+)\]:([a-z0-9]+),([a-z0-9]+):?(.*)$/", $input, $match)) {
-		global $db;
-		list($line, $table, $key, $text, $where) = $match;
-		$query = $db->query_by("$key,$text", $table, $where);
-		while($row = $db->fetch_array($query)) {
-			$return[$row[$key]] = $row[$text];
-		}
-	} else {
-		$options = explode(";", $input);
-		foreach($options as $option) {
-			if($option == '') continue;
-			if(strpos($option, ',') === false) {
-				$_text = $_value = $option;
-			} else {
-				list($_text, $_value) = explode(',', $option);
-			}
-			$return[$_value] = $_text;
-		}
-	}
-	return $return;
 }
 ?>

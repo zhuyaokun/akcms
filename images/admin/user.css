@@ -1,0 +1,12 @@
+.ak_nav{text-align:right;padding:5px;}
+.ak_nav a{margin:0px 5px;}
+.ak_body{border:1px solid #CCCCCC;padding:20px;}
+.ak_inputtext{height:20px;width:150px;font-size:18px;margin-right:10px;}
+.ak_inputbutton{height:28px;font-size:18px;padding:2px 8px;}
+.ak_label{width:200px;text-align:right;float:left;font-size:18px;line-height:20px;padding-top:5px;padding-right:10px;}
+.ak_input{width:200px;float:left;}
+.ak_inputinfo{margin-top:4px;color:red;}
+.ak_inputinfo img{float:left;margin-top:-3px;}
+.ak_line{clear:both;height:30px;margin-top:10px;}
+.ak_bodytitle{font-size:26px;font-weight:bold;margin:5px 0;padding:0px;height:35px;}
+.ak_footer{font-size:11px;font-family:verdana;text-align:center;margin-top:20px;}

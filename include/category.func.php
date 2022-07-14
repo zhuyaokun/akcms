@@ -11,13 +11,15 @@ function get_category_data($id, $template = 'default') {
 	$variables['defaulttemplate'] = $categorycache['defaulttemplate'];
 	$variables['template'] = $categorycache['defaulttemplate'];
 	$variables['listtemplate'] = $categorycache['listtemplate'];
-	$variables['subcategories'] = array();
-	if(!empty($categorycache['subcategories'])) $variables['subcategories'] = $categorycache['subcategories'];
+	if(!empty($categorycache['subcategories'])) {
+		$variables['subcategories'] = $categorycache['subcategories'];
+	} else {
+		$variables['subcategories'] = array();
+	}
 	$variables['category'] = $category['id'];
 	$variables['alias'] = $category['alias'];
 	$variables['categoryname'] = $category['category'];
-	$variables['path'] = $categorycache['path'];
-	$variables['fullpath'] = $categorycache['fullpath'];
+	$variables['path'] = $category['path'];
 	$variables['data'] = $category['data'];
 	$variables['categoryup'] = $category['categoryup'];
 	$variables['orderby'] = $category['orderby'];
@@ -32,38 +34,18 @@ function get_category_data($id, $template = 'default') {
 		$variables['html'] = $category['html'];
 	}
 	$variables['storemethod'] = $category['storemethod'];
-	$variables['total'] = $db->get_by('COUNT(*) as c', 'items', "category='$id'");
+	$total = $db->get_by('COUNT(*) as c', 'items', "category='$id'");
+	$variables['total'] = $total;
 	$path = $categorycache['fullpath'];
-	$_homemethod = $categorycache['categoryhomemethod'];
+	$_homemethod = FORE_ROOT.$categorycache['categoryhomemethod'];
 	$_homemethod = str_replace('[categorypath]', $path, $_homemethod);
-	$_homemethod = str_replace('[id]', $id, $_homemethod);
-	$_homemethod = str_replace('[path]', $category['path'], $_homemethod);
-	$variables['htmlfilename'] = FORE_ROOT.$_homemethod;
-	$variables['currenturl'] = $_homemethod;
+	$variables['htmlfilename'] = $_homemethod;
 	$variables['url'] = getcategoryurl($id);
 	$variables['pagetemplate'] = $categorycache['itemtemplate'];
 	$variables['categoryhomemethod'] = $categorycache['categoryhomemethod'];
+	$variables['categorypagemethod'] = $categorycache['categorypagemethod'];
 	$variables['picture'] = $categorycache['picture'];
 	return $variables;
-}
-
-function createcategoryhtml($id) {
-	
-	$variables = get_category_data($id);
-	$indexfilename = $variables['htmlfilename'];
-	deletetask('createhtml_category');
-	$GLOBALS['index_work'] = "category\n".$id."\n".$variables['htmlfilename'];
-	$html = render_template($variables['template'], $variables, 1);
-	$tasks = gettask('createhtml_category', -1);
-	if(empty($tasks)) return true;
-	foreach($tasks as $task) {
-		list($id, $filename, $page) = explode("\t", $task);
-		if(empty($filename)) $filename = $indexfilename;
-		if($page > 1) $variables['template'] = $variables['listtemplate'];
-		$variables['page'] = $page;
-		$variables['htmlfilename'] = $filename;
-		render_template($variables['template'], $variables, 1);
-	}
 }
 
 function batchcategoryhtml($ids) {
@@ -71,21 +53,22 @@ function batchcategoryhtml($ids) {
 	foreach($ids as $id) {
 		$variables = get_category_data($id);
 		$GLOBALS['index_work'] = "category\n".$id."\n".$variables['htmlfilename'];
-		$html = render_template($variables['template'], $variables, 1);
+		render_template($variables, '', 1);
 	}
 }
 
 function operatecreatecategoryprocess() {
+	require_once(CORE_ROOT.'include/task.file.func.php');
 	unset($GLOBALS['index_work']);
-	$tasks = gettask('createhtml_category', 50);
+	$tasks = gettask('indextaskcategory', 50);
 	if(empty($tasks)) return true;
 	foreach($tasks as $task) {
-		list($id, $filename, $page) = explode("\t", $task);
+		list($type, $id, $filename, $page) = explode("\n", $task);
 		$variables = get_category_data($id);
 		if($page > 1) $variables['template'] = $variables['listtemplate'];
 		$variables['page'] = $page;
 		$variables['htmlfilename'] = $filename;
-		render_template($variables['template'], $variables, 1);
+		render_template($variables, '', 1);
 	}
 }
 
@@ -149,7 +132,7 @@ function rendercategorybranch($id, $branches, $subcategories) {
 		} else {
 			$return .= "<div class='f'></div>";
 		}
-		$return .= $branches[$id];
+		$return .= ("<div class='yzline'>".$branches[$id]."</div>");
 	}
 	if(!empty($subcategories[$id])) {
 		$return .= "<div id='c$id'>";
@@ -166,7 +149,7 @@ function rendercategorytree() {
 	global $db, $lan;
 	$cachekey = 'categorytree';
 	if($tree = getcache($cachekey)) return $tree;
-	$query = $db->query_by('*', 'categories', 'categoryup>=0 ORDER BY orderby DESC');
+	$query = $db->query_by('*', 'categories', 'categoryup>=0');
 	$subcategories = $branches = $categories = array();
 	while($category = $db->fetch_array($query)) {
 		$categories[] = $category;
@@ -183,6 +166,7 @@ function rendercategorytree() {
 function rendercategoryleaf($category) {
 	global $lan;
 	$id = $category['id'];
+	//$branch = "<div class=categoryid>{$id}. </div><div class=categoryname><a href='?action=editcategory&id={$id}'>{$category['category']}</a></div><div class=categoryopt><a href='?action=newcategory&parent={$id}'>[+{$lan['subcategory']}]</a> <a href='?action=newitem&category={$id}'>[+{$lan['item']}]</a> <a href='?action=items&category={$id}'>[{$lan['item']}]</a> <a href='javascript:d({$id})'>[{$lan['del']}]</a></div>";	
 	$branch = "{$id}. <a href='?action=editcategory&id={$id}'>{$category['category']}</a> [<a href='?action=newcategory&parent={$id}'>+{$lan['subcategory']}</a>] [<a href='?action=newitem&category={$id}'>+{$lan['item']}</a>] [<a href='?action=items&category={$id}'>{$lan['item']}</a>] [<a href='javascript:d({$id})'>{$lan['del']}</a>]";
 	if($category['items'] > 0) $branch .= " ({$category['items']})";
 	return $branch;
@@ -229,7 +213,7 @@ function updatecategoryextvalue($id, $category = array()) {
 	$modules = getcache('modules');
 	if(!isset($modules[$category['module']])) return array();
 	$moduleext = $modules[$category['module']]['data'];
-	$fields = array('storemethod', 'categoryhomemethod', 'defaulttemplate', 'listtemplate', 'itemtemplate', 'html', 'pagetemplate', 'pagestoremethod', 'template2', 'template3', 'template4', 'storemethod2', 'storemethod3', 'storemethod4');
+	$fields = array('storemethod', 'categoryhomemethod', 'categorypagemethod', 'defaulttemplate', 'listtemplate', 'itemtemplate', 'html', 'pagetemplate', 'pagestoremethod', 'template2', 'template3', 'template4', 'storemethod2', 'storemethod3', 'storemethod4');
 	if($category['categoryup'] > 0) {
 		$categoryupcache = getcategorycache($category['categoryup']);
 		$fullpath = $categoryupcache['fullpath'];

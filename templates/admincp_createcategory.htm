@@ -1,11 +1,16 @@
 <{include file="admincp_header.htm"}>
 <script language="javascript">
-function invertselection() {
-	for(i = 0; i < document.batchform.elements.length; i++) {
-		if(document.batchform.elements[i].type == 'checkbox' && document.batchform.elements[i].name == 'cid[]') {
-			if(document.batchform.elements[i].checked == true) {
-				document.batchform.elements[i].checked = false;
-			} else {
+function invertselection() 
+{
+	for(i = 0; i < document.batchform.elements.length; i++) 
+	{
+		if(document.batchform.elements[i].type == 'checkbox' && document.batchform.elements[i].name == 'cid[]') 
+		{
+			if(document.batchform.elements[i].checked == true) 
+		{
+			document.batchform.elements[i].checked = false;} 
+			else 
+			{
 				document.batchform.elements[i].checked = true;
 			}
 		}
@@ -14,17 +19,18 @@ function invertselection() {
 </script>
 <body>
 <table border="0" cellspacing="1" cellpadding="4" class="commontable" align="center">
-	<tr class="header">
-		<td colspan="3"><{$lan.createcategorybatch}></td>
-	</tr>
-	<form action="index.php?file=admincp&action=createcategory&do=batch" method="post" name="batchform" id="batchform">
-	<{$categorieslist}>
-	<tr>
-		<td colspan="3" style="text-align:center;">
-			<input type="submit" value="<{$lan.createcategorybatch}>">
-		</td>
-	</tr>
-	</form>
+<tr class="header">
+	<td colspan="3"><{$lan.createcategorybatch}></td>
+</tr>
+<form action="index.php?file=admincp&action=createcategory" method="post" name="batchform" id="batchform">
+<tr>
+	<td colspan="3" align="center">
+		<!--input type="button" name="abc" value="<{$lan.invertselection}>" onclick="invertselection()"-->
+		<input type="submit" name="submit" value="<{$lan.batch}>">
+	</td>
+</tr>
+<{$categorieslist}>
+</form>
 </table>
 </body>
 </html>

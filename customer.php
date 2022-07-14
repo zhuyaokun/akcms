@@ -1,5 +1,5 @@
 <?php
-if(!defined('CORE_ROOT')) exit();
+if(!defined('CORE_ROOT')) @include 'include/directaccess.php';
 require CORE_ROOT.'include/admin.inc.php';
 if(empty($get_action)) {
 	displaytemplate('customer.htm');
@@ -17,7 +17,8 @@ if(empty($get_action)) {
 		}
 		$input .= "<tr><td valign=\"top\"><b>{$title}</b><br>{$description}</td><td valign=\"top\" width=\"300\">".renderinput($v, $variable['type'], $variable['standby'], $variable['value'])."</td></tr>\n";
 	}
-	displaytemplate('admincp_variable.htm', array('html' => $input));
+	$smarty->assign('html', $input);
+	displaytemplate('admincp_variable.htm');
 } elseif($get_action == 'savevariable') {
 	foreach($_POST as $k => $v) {
 		if(is_array($v)) $v = implode(',', $v);

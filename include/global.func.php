@@ -4,71 +4,6 @@ require_once(CORE_ROOT.'include/cache.func.php');
 require_once(CORE_ROOT.'include/section.func.php');
 require_once(CORE_ROOT.'include/category.func.php');
 require_once(CORE_ROOT.'include/kv.func.php');
-require_once(CORE_ROOT.'include/template.class.php');
-
-function approot($app) {
-	return AK_ROOT."configs/apps/$app/";
-}
-
-function writelog($log, $event = '', $good = 0) {
-	if(function_exists('core_writelog')) {
-		return core_writelog($log, $event, $good);
-	} else {
-		return true;
-	}
-}
-
-function loadlan($lanfile) {
-	$lan = array();
-	if(file_exists($lanfile)) {
-		$fp = fopen($lanfile, 'r');
-		while(!feof($fp)) {
-			$line = trim(fgets($fp, 1024));
-			if($line == '') continue;
-			if(strpos($line, "\t") === false) continue;
-			list($_k, $_l) = explode("\t", $line);
-			$lan[$_k] = $_l;
-		}
-		fclose($fp);
-	}
-	return $lan;
-}
-
-function getakvariable($variable) {
-	global $db;
-	$value = $db->get_by('value', 'variables', "variable='".$db->addslashes($variable)."'");
-	return $value;
-}
-
-function actionhookfile($key) {
-	return AK_ROOT.'configs/hooks/'.$key.'.php';
-}
-
-function hookfunction($key, &$return, $params = array()) {
-	if(file_exists(AK_ROOT.'configs/hooks/'.$key.'.php')) include(AK_ROOT.'configs/hooks/'.$key.'.php');
-}
-
-function appfile($app, $file) {
-	return AK_ROOT.'configs/apps/'.$app.'/program/'.$file;
-}
-
-function parseparams() {
-	$params = array();
-	foreach($_SERVER['argv'] as $param) {
-		if(strpos($param, '-') !== 0) continue;
-		$param = substr($param, 1);
-		$ep = strpos($param, '=');
-		if($ep === false) {
-			$params[$param] = 1;
-		} else {
-			$p = substr($param, 0, $ep);
-			$v = substr($param, $ep + 1);
-			$params[$p] = trim($v);
-		}
-	}
-	return $params;
-}
-
 function createconfig($configs = array()) {
 	$str_config = '';
 	$array_config = array('dbtype', 'dbhost', 'dbuser', 'dbpw', 'dbname', 'tablepre', 'charset', 'timedifference', 'template_path', 'codekey', 'cookiepre', 'core_root', 'core_url');
@@ -94,6 +29,7 @@ function createconfig($configs = array()) {
 		}
 		$str_config .= '$'.$config.' = \''.$value."';\n";
 	}
+	eventlog("$str_config");
 	$str_config .= "\$ifdebug = 0;\n";
 	$str_config = "<?php\n".$str_config."?>";
 	writetofile($str_config, 'configs/config.inc.php');
@@ -114,9 +50,6 @@ function db($config = array(), $forcenew = 0) {
 		} elseif($dbtype == 'sqlite') {
 			$config['type'] = 'sqlite';
 			$config['dbname'] = $dbname;
-		} elseif($dbtype == 'sqlite3') {
-			$config['type'] = 'sqlite3';
-			$config['dbname'] = $dbname;
 		} elseif($dbtype == 'pdo:sqlite2') {
 			$config['type'] = 'pdo:sqlite';
 			$config['version'] = 2;
@@ -136,21 +69,18 @@ function db($config = array(), $forcenew = 0) {
 	}
 	if($config['type'] == 'mysql') {
 		require_once(CORE_ROOT.'include/db.mysql.php');
-		$_db = new mysqlstuff($config);
+		$db = new mysqlstuff($config);
 	} elseif($config['type'] == 'sqlite') {
 		require_once(CORE_ROOT.'include/db.sqlite.php');
-		$_db = new sqlitestuff($config);
+		$db = new sqlitestuff($config);
 	} elseif($config['type'] == 'pdo:sqlite') {
 		require_once(CORE_ROOT.'include/db.pdo.sqlite.php');
-		$_db = new pdosqlitestuff($config);
+		$db = new pdosqlitestuff($config);
 	} elseif($config['type'] == 'pdo:mysql') {
 		require_once(CORE_ROOT.'include/db.pdo.mysql.php');
-		$_db = new pdomysqlstuff($config);
-	} elseif($config['type'] == 'sqlite3') {
-		require_once(CORE_ROOT.'include/db.sqlite3.php');
-		$_db = new sqlite3stuff($config);
+		$db = new pdomysqlstuff($config);
 	}
-	return $_db;
+	return $db;
 }
 function akinclude($params) {
 	global $template_path;
@@ -161,21 +91,31 @@ function akinclude($params) {
 	}
 	$pagevariables['subtemplate'] = 1;
 	if(empty($params['expire'])) {
-		echo render_template($params['file'], $pagevariables);
+		echo render_template($pagevariables, $params['file']);
 	} else {
 		$params['type'] = 'template';
 		$data = getcachedata($params);
 		if($data == '') {
-			$data = render_template($params['file'], $pagevariables);
+			$data = render_template($pagevariables, $params['file']);
 			setcachedata($params, $data);
 		}
 		echo $data;
 	}
 }
 
-function render_template($template, $pagevariables = array(), $createhtml = 0, $show = 0) {
+function includetemplateplugins() {
+	global $html_smarty, $plugins;
+	$plugins = getcache('plugins');
+	if(empty($plugins)) return;
+	foreach($plugins as $plugin) {
+		$pluginkey = str_replace('.template.php', '', $plugin);
+		require_once(AK_ROOT.'plugins/'.$plugin);
+		$html_smarty->register_function($pluginkey, $pluginkey);
+	}
+}
 
-
+function render_template($pagevariables, $template = '', $createhtml = 0) {
+	if(!empty($pagevariables['html']) && !empty($createhtml) && strpos($pagevariables['htmlfilename'], '?') !== false) return false;
 	if($template == '') {
 		if(isset($pagevariables['template'])) {
 			$template = $pagevariables['template'];
@@ -183,54 +123,57 @@ function render_template($template, $pagevariables = array(), $createhtml = 0, $
 			return false;
 		}
 	}
-	global $template_path, $tpl, $user, $thetime, $lan, $lr, $header_charset, $globalvariables, $sections, $setting_storemethod, $homepage, $setting_defaultfilename, $sysname, $sysedition, $settings;
-	if(empty($pagevariables['subtemplate']) && empty($pagevariables['systemplate']) && strpos($template, '/') === false) $template = ','.$template;
-	createpathifnotexists(AK_ROOT."cache/foretemplates");
-	$tpl = new tpl(array(AK_ROOT."configs/templates/$template_path", AK_ROOT.'templates/fore'), AK_ROOT.'cache/foretemplates');
-	$GLOBALS['tpl'] = $tpl;
-	
-	$variables = array(
-		'charset' => $header_charset,
-		'thetime' => $thetime,
-		'page' => 1,
-		'home' => substr($homepage, 0, -1)
-	);
-
-	if(isset($_GET['page']) && a_is_int($_GET['page'])) $variables['page'] = $_GET['page'];
-	if(isset($pagevariables['page'])) $variables['page'] = $pagevariables['page'];
+	global $template_path, $smarty, $thetime, $lr, $header_charset, $globalvariables, $sections, $setting_storemethod, $html_smarty, $homepage, $setting_defaultfilename, $sysname, $sysedition;
+	if(empty($pagevariables['subtemplate']) && empty($pagevariables['systemplate'])) $template = ','.$template;
+	$templatefile = $template;
+	if(strpos($template, '/') === false) $templatefile = AK_ROOT."configs/templates/$template_path/".$template;
+	if(!file_exists($templatefile)) {
+		if(substr($template, 0, 1) == ',') $template = substr($template, 1);
+		aexit($template.' lose.<br /><a href="http://www.akhtm.com/manual/template-lose.htm" target="_blank">help</a>');
+	}
+	require_once CORE_ROOT.'include/smarty/libs/Smarty.class.php';
+	$html_smarty = new Smarty;
+	$sections = getcache('sections');
 	$globalvariables = getcache('globalvariables');
+	require_once CORE_ROOT.'include/getdata.func.php';
+	$html_smarty->template_dir = AK_ROOT."configs/templates/$template_path";
+	$html_smarty->compile_dir = AK_ROOT."cache/foretemplates";
+	$html_smarty->config_dir = AK_ROOT."configs/";
+	$html_smarty->cache_dir = AK_ROOT."cache/";
+	$html_smarty->left_delimiter = "<{";
+	$html_smarty->right_delimiter = "}>";
+	$html_smarty->error_reporting = true;
+	$html_smarty->assign('charset', $header_charset);
+	$html_smarty->assign('pagevariables', $pagevariables);
+	$html_smarty->assign('thetime', $thetime);
+	$functions = array('akinclude', 'akincludeurl', 'getitems', 'gettexts', 'getcategories', 'getcomments', 'getlists', 'monitor', 'getindexs', 'getpaging','ifhassubcategories', 'getattachments', 'getkeywords', 'getsqls', 'getinfo', 'getuser', 'getpictures', 'akecho');
+	foreach($functions as $function) {
+		$html_smarty->registerPlugin('function', $function, $function);
+	}
+	includetemplateplugins();
+	$html_smarty->assign('home', substr($homepage, 0, -1));
 	if(!empty($globalvariables)) {
 		foreach($globalvariables as $key => $v) {
-			$variables['v_'.$key] = $v;
+			$html_smarty->assign('v_'.$key, $v);
 		}
+	}
+	foreach($pagevariables as $key => $value) {
+		$html_smarty->assign($key, $value);
 	}
 	foreach($_GET as $key => $value) {
-		$variables['get_'.$key] = ak_htmlspecialchars($value);
-		$variables['get_d_'.$key] = $value;
-		$variables['get_u_'.$key] = urlencode($value);
+		$html_smarty->assign('get_'.$key, ak_htmlspecialchars($value));
+		$html_smarty->assign('get_d_'.$key, $value);
+		$html_smarty->assign('get_u_'.$key, urlencode($value));
 	}
 	foreach($_COOKIE as $key => $value) {
-		$variables['cookie_'.$key] = ak_htmlspecialchars($value);
-		$variables['cookie_d_'.$key] = $value;
+		$html_smarty->assign('cookie_'.$key, ak_htmlspecialchars($value));
+		$html_smarty->assign('cookie_d_'.$key, $value);
 	}
-	foreach($settings as $k => $v) {
-		$variables['setting_'.$k] = $v;
-	}
-	$variables['lan'] = $lan;
-	$tpl->assign($pagevariables);
-	$tpl->assign($variables);
-	
-	require_once CORE_ROOT.'include/getdata.func.php';
-	$function = 'akinclude,akincludeurl,getitems,getsections,gettexts,getcategories,getcomments,getlists,monitor,getindexs,getpaging,ifhassubcategories,getattachments,getkeywords,getsqls,getinfo,getuser,getpictures,akecho,gettime';
-	$tpl->regfunction($function);
-	$apps = getcache('templateplugins');
-	if(!empty($apps)) {
-		foreach($apps as $app) {
-			$tpl->regfunction($app);
-		}
-	}
-	$html = $tpl->render($template);
-	if(empty($pagevariables['subtemplate'])) $html = renderhtml($html, $pagevariables);
+	$html_smarty->assign('page', '1');
+	if(isset($_GET['page'])) $html_smarty->assign('page', htmlspecialchars($_GET['page']));
+	if(isset($pagevariables['page'])) $html_smarty->assign('page', $pagevariables['page']);
+	$text = $html_smarty->fetch($template, true, false);
+	if(empty($pagevariables['subtemplate'])) $text = renderhtml($text, $pagevariables);
 	if(!empty($pagevariables['html']) && !empty($createhtml)) {
 		$filename = $pagevariables['htmlfilename'];
 		$_s = calfilenamefromurl($filename);
@@ -239,10 +182,9 @@ function render_template($template, $pagevariables = array(), $createhtml = 0, $
 		} elseif(substr($_s, -1) == '/') {
 			$filename .= $setting_defaultfilename;
 		}
-		writetofile($html, $filename);
+		writetofile($text, $filename);
 	}
-	if($show > 0) echo $html;
-	return $html;
+	return $text;
 }
 
 function get_text_data($itemid, $page, $variables = array(), $category = array()) {
@@ -257,14 +199,12 @@ function get_text_data($itemid, $page, $variables = array(), $category = array()
 		$v['pagedata'] = $text;
 	}
 	$v['itempage'] = $page;
-	$v['htmlfilename'] = '';
-	$filename = itempagehtmlname($itemid, $page, $variables, $category);
-	if($filename != '') $v['htmlfilename'] = FORE_ROOT.$filename;
+	$v['htmlfilename'] = FORE_ROOT.itempagehtmlname($itemid, $page, $variables, $category);
 	return $v;
 }
 
-function get_item_data($id, $template = '', $params = array(), $uid = 0) {
-	global $template_path, $db, $tablepre, $lan, $thetime, $system_root, $lr, $setting_homepage, $setting_ifhtml, $sections, $setting_storemethod, $setting_richtext, $homepage, $attachurl;
+function get_item_data($id, $template = '', $params = array()) {
+	global $template_path, $smarty, $db, $tablepre, $lan, $thetime, $system_root, $lr, $header_charset, $setting_homepage, $setting_ifhtml, $sections, $setting_storemethod, $html_smarty, $setting_richtext, $homepage, $attachurl;
 	if(!a_is_int($id)) return false;
 	$variables['_pagetype'] = 'item';
 	$variables['_pageid'] = $id;
@@ -297,14 +237,13 @@ function get_item_data($id, $template = '', $params = array(), $uid = 0) {
 		$itempage = 1;
 		$subtitle = '';
 	} else {
-		$text = $subtitle = $pagedata = '';
-		$itempage = $params['itempage'];
-		$sql = "SELECT * FROM {$tablepre}_texts WHERE itemid='{$id}' AND page IN (0,{$params['itempage']})";
+		$sql = "SELECT * FROM {$tablepre}_texts WHERE itemid='{$id}' AND page IN ('0','{$params['itempage']}')";
 		$query = $db->query($sql);
 		while($record = $db->fetch_array($query)) {
 			if($record['page'] == 0) {
 				$text = $pagedata = $record['text'];
 			} else {
+				$itempage = $params['itempage'];
 				$subtitle = $record['subtitle'];
 				$pagedata = $record['text'];
 				if(!empty($module['data']['fields']['paging']['type']) && $module['data']['fields']['paging']['type'] == 'plain') $pagedata = nl2br($pagedata);
@@ -316,6 +255,7 @@ function get_item_data($id, $template = '', $params = array(), $uid = 0) {
 	$title = htmltitle($texttitle, $item['titlecolor'], $item['titlestyle']);
 	$shorttitle = htmltitle($textshorttitle, $item['titlecolor'], $item['titlestyle']);
 	$text = renderkeywords($text, $item['keywords']);
+	
 	$sections = getcache('sections');
 	$section = !empty($sections[$item['section']]) ? $sections[$item['section']] : array();
 	if(empty($item['dateline'])) $item['dateline'] = 0;
@@ -355,8 +295,6 @@ function get_item_data($id, $template = '', $params = array(), $uid = 0) {
 	}
 	$variables['keywords'] = tidyitemlist($item['keywords'], ',', 0);
 	$variables['category'] = $item['category'];
-	$variables['aimurl'] = $item['aimurl'];
-	$variables['digest'] = $item['digest'];
 	if(!empty($item['category']) && $item['category'] > 0) {
 		$variables['categoryname'] = $categorycache['category'];
 		$variables['categoryurl'] = getcategoryurl($item['category']);
@@ -365,12 +303,9 @@ function get_item_data($id, $template = '', $params = array(), $uid = 0) {
 		$variables['categorydescription'] = $categorycache['description'];
 		$variables['categorykeywords'] = $categorycache['keywords'];
 		$variables['categoryup'] = $categorycache['categoryup'];
-	} else {
-		$variables['title'] = $variables['aimurl'];
-		$variables['description'] = $variables['digest'];
 	}
 	$variables['section'] = $item['section'];
-	if(!empty($item['section']) && !empty($section)) {
+	if(!empty($item['section'])) {
 		$variables['sectionname'] = $section['section'];
 		$variables['sectionalias'] = $section['alias'];
 		$variables['sectiondescription'] = $section['description'];
@@ -383,7 +318,9 @@ function get_item_data($id, $template = '', $params = array(), $uid = 0) {
 	$variables['source'] = $item['source'];
 	$variables['picture'] = pictureurl($item['picture'], $attachurl);
 	$variables['pageview'] = $item['pageview'];
+	$variables['digest'] = $item['digest'];
 	if(empty($module['data']['fields']['digest']['richtext'])) $variables['digest'] = nl2br($item['digest']);
+	$variables['aimurl'] = $item['aimurl'];
 	$variables['y'] = $y;
 	$variables['m'] = $m;
 	$variables['d'] = $d;
@@ -396,40 +333,27 @@ function get_item_data($id, $template = '', $params = array(), $uid = 0) {
 	$variables['last_d'] = $last_d;
 	$variables['last_h'] = $last_h;
 	$variables['last_i'] = $last_i;
-	$variables['draft'] = $item['draft'];
 	$variables['last_s'] = $last_s;
 	$variables['commentnum'] = $item['commentnum'];
 	$variables['scorenum'] = $item['scorenum'];
 	$variables['aimurl'] = $item['aimurl'];
 	$variables['totalscore'] = $item['totalscore'];
 	$variables['avgscore'] = $item['avgscore'];
-	$variables['filename'] = $item['filename'];
 	$variables['attach'] = $item['attach'];
 	$variables['orderby'] = $item['orderby'];
 	$variables['orderby2'] = $item['orderby2'];
 	$variables['orderby3'] = $item['orderby3'];
 	$variables['orderby4'] = $item['orderby4'];
-	$variables['orderby5'] = $item['orderby5'];
-	$variables['orderby6'] = $item['orderby6'];
-	$variables['orderby7'] = $item['orderby7'];
-	$variables['orderby8'] = $item['orderby8'];
 	$variables['pv1'] = $item['pv1'];
 	$variables['pv2'] = $item['pv2'];
 	$variables['pv3'] = $item['pv3'];
 	$variables['pv4'] = $item['pv4'];
-	$variables['string1'] = $item['string1'];
-	$variables['string2'] = $item['string2'];
-	$variables['string3'] = $item['string3'];
-	$variables['string4'] = $item['string4'];
 	$variables['itempage'] = $itempage;
 	$variables['subtitle'] = $subtitle;
 	$variables['pagedata'] = $pagedata;
 	$variables['pagenum'] = $item['pagenum'];
-	$variables['tags'] = $item['tags'];
 	if($variables['html']) {
-		$_html = itemhtmlname($item['id'], 1, $item, $categorycache);
-		$variables['htmlfilename'] = FORE_ROOT.$_html;
-		$variables['currenturl'] = $_html;
+		$variables['htmlfilename'] = FORE_ROOT.itemhtmlname($item['id'], 1, $item, $categorycache);
 		if($item['category'] > 0) {
 			for($i = 2; $i <= 4; $i ++) {
 				$variables['htmlfilename'.$i] = '';
@@ -437,12 +361,6 @@ function get_item_data($id, $template = '', $params = array(), $uid = 0) {
 				if($_itemhtmlname != '') $variables['htmlfilename'.$i] = FORE_ROOT.$_itemhtmlname;
 				$variables['template'.$i] = $categorycache['template'.$i];
 			}
-		}
-	}
-	if($uid) {
-		$relations = $db->query_by('action', 'actions', "uid=$uid AND iid=$id");
-		while($relation = $db->fetch_array($relations)) {
-			$variables[$relation['action']] = $relation['action'];
 		}
 	}
 	return $variables;
@@ -455,14 +373,16 @@ function batchhtml($ids, $params = array()) {
 	if(is_numeric($ids)) $ids = array($ids);
 	$categories = array();
 	$GLOBALS['batchcreateitemflag'] = 1;
-	deletetask('createhtml_item');
+	require_once(CORE_ROOT.'include/task.file.func.php');
+	deletetask('indextask');
 	foreach($ids as $id) {
-		addtask('createhtml_item', "$id\t\t1");
+		addtask('indextaskitem', "item\n".$id."\n\n0");
 	}
-	while($task = gettask('createhtml_item')) {
-		list($id, $filename, $page) = explode("\t", $task);
+	while($task = gettask('indextaskitem')) {
+		list($type, $id, $filename, $page) = explode("\n", $task);
 		if(strpos($filename, '?') !== false) continue;
-		if(!isset($lastid) || $lastid != $id) $variables = get_item_data($id);
+		if($type != 'item') continue;
+		$variables = get_item_data($id);
 		if(empty($variables)) return false;
 		if(!empty($filename)) $variables['htmlfilename'] = $filename;
 		$variables['page'] = $page;
@@ -475,27 +395,27 @@ function batchhtml($ids, $params = array()) {
 		if($variables['html']) {
 			if($page <= 1) $GLOBALS['index_work'] = "item\n".$id."\n".$variables['htmlfilename'];
 			if(empty($params['onlypage'])) {
-				$html = render_template($variables['template'], $variables, 1);
-				if($html === false) return false;
+				$result = render_template($variables, '', 1);
+				if($result === false) return false;
 				for($i = 2; $i <= 4; $i ++) {
 					if(empty($variables['template'.$i]) || empty($variables['htmlfilename'.$i])) continue;
-					$html = render_template($variables['template'.$i], $variables, 1);
+					$variables['template'] = $variables['template'.$i];
+					$variables['htmlfilename'] = $variables['htmlfilename'.$i];
+					render_template($variables, '', 1);
 				}
 			}
 			if(empty($params['nopage'])) {
 				if($variables['pagenum'] > 0) {
 					for($i = 1; $i <= $variables['pagenum']; $i ++) {
 						$textdata = get_text_data($id, $i, $variables, $cc);
-						if($textdata['htmlfilename'] == '') continue;
 						unset($textdata['id']);
 						$textdata += $variables;
-						$html = render_template($cc['pagetemplate'], $textdata, 1);
+						render_template($textdata, $cc['pagetemplate'], 1);
 					}
 				}
 			}
 		}
 		unset($GLOBALS['index_work']);
-		$lastid = $id;
 	}
 	unset($GLOBALS['batchcreateitemflag']);
 }
@@ -503,9 +423,7 @@ function batchhtml($ids, $params = array()) {
 function getkeywordscache() {
 	global $codekey;
 	$_keywords = array();
-	$file = AK_ROOT.'configs/keywords.txt';
-	if(!file_exists($file)) return $_keywords;
-	if($fp = @fopen($file, 'r')) {
+	if($fp = @fopen(AK_ROOT.'configs/keywords.txt', 'r')) {
 		while(!feof($fp)) {
 			$_line = trim(fgets($fp));
 			if(empty($_line)) continue;
@@ -534,7 +452,6 @@ function keywordfilename($keyword, $se = array()) {
 
 function getsedata($sid) {
 	global $db;
-	if(!a_is_int($sid)) return false;
 	$se = $db->get_by('*', 'ses', "id='$sid'");
 	return $se + ak_unserialize($se['value']);
 }
@@ -558,7 +475,7 @@ function itemhtmlname($id, $version = 1, $item = array(), $cc = array()) {
 	global $setting_htmlexpand, $db;
 	if(empty($item)) $item = $db->get_by('*', 'items', "id=$id");
 	$category = $item['category'];
-	$filename = isset($item['filename']) ? $item['filename'] : '';
+	$filename = $item['filename'];
 	if(empty($cc)) $cc = getcategorycache($category);
 	if($category > 0 && empty($cc)) return false;
 	list($year, $month, $day) = explode(' ', date('Y m d', $item['dateline']));
@@ -580,7 +497,6 @@ function itemhtmlname($id, $version = 1, $item = array(), $cc = array()) {
 	$path = str_replace('[m]', $month, $path);
 	$path = str_replace('[d]', $day, $path);
 	$path = str_replace('[id]', $id, $path);
-	if(isset($item['author'])) $path = str_replace('[author]', space2dash($item['author']), $path);
 	$path = preg_replace('/\[id\/([\d]+)\]/e', "ceil($id/\\1)", $path);
 	if(empty($filename)) {
 		$filename = "{$id}{$setting_htmlexpand}";
@@ -597,7 +513,7 @@ function itempageurl($id, $page = 0, $item = array(), $cc = array()) {
 	return $homepage.itempagehtmlname($id, $page, $item, $cc);
 }
 function itempagehtmlname($id, $page, $item = array(), $cc = array()) {
-	global $db, $setting_htmlexpand;
+	global $db;
 	if(empty($item)) $item = $db->get_by('*', 'items', "id=$id");
 	$category = $item['category'];
 	if(empty($cc)) $cc = getcategorycache($category);
@@ -617,15 +533,6 @@ function itempagehtmlname($id, $page, $item = array(), $cc = array()) {
 	$path = str_replace('[d]', $day, $path);
 	$path = str_replace('[id]', $id, $path);
 	$path = str_replace('[page]', $page, $path);
-	$filename = $item['filename'];
-	if(empty($filename)) {
-		$filename = "{$id}{$setting_htmlexpand}";
-	} else {
-		if(preg_match('/^\//i', $filename)) {
-			return substr($filename, 1);
-		}
-	}
-	$path = str_replace('[f]', $filename, $path);
 	$path = preg_replace('/\[id\/([\d]+)\]/e', "ceil($id/\\1)", $path);
 	return $path;
 }
@@ -700,6 +607,16 @@ function updateitemscore($id) {
 	$db->update('items', $value, "id=$id");
 }
 
+function changeuserpassword($uid, $password) {
+	global $db;
+	$db->update('users', array('password' => ak_md5($password, 1, 2)), "id='$uid'");
+}
+
+function deleteuser($uid) {
+	global $db;
+	$db->delete('users', "id='$uid'");
+}
+
 function pickpicture($html, $baseurl = '') {
 	preg_match_all("/<img(.*?)src=(.+?)['\" >]+/is", $html, $match);
 	$pics = array();
@@ -729,8 +646,9 @@ function copypicturetolocal($html, $config, $task = 0) {
 	foreach($pics as $pic) {
 		$picname = get_upload_filename($pic, 0, $category, 'image');
 		$pictureurl = calrealurl($pic, $config['itemurl']);
-		if(strpos($pictureurl, $homepage) !== false) continue;
 		if(!empty($task)) {
+			require_once(CORE_ROOT.'include/task.file.func.php');
+			addtask('spiderpicture', $pictureurl."\t".FORE_ROOT.$picname);
 		} else {
 			$picturedata = readfromurl($pictureurl);
 			writetofile($picturedata, FORE_ROOT.$picname);
@@ -767,7 +685,7 @@ function get_upload_filename($filename, $id, $category, $type = 'attach') {
 	list($y, $m, $d) = explode('-', date('Y-m-d', $thetime));
 	$c = getcategorycache($category);
 	if($type != 'thumb') {
-		$filename = random(6).'.'.fileext($filename);
+		//$filename = random(6).'.'.fileext($filename);
 	} else {
 		$filename = basename($filename);
 	}
@@ -785,18 +703,6 @@ function get_upload_filename($filename, $id, $category, $type = 'attach') {
 		'hash3' => substr($md5, 2, 1),
 	);
 	$return = calstoremethod($return, $variable);
-	return $return;
-}
-
-function get_spider_filename($filename, $type = 'attach') {
-	$md5 = md5($filename);
-	$variable = array(
-		'f' => substr($md5, 0, 12).'.'.fileext($filename),
-		'hash1' => substr($md5, 0, 1),
-		'hash2' => substr($md5, 1, 1),
-		'hash3' => substr($md5, 2, 1),
-	);
-	$return = calstoremethod('pictures/s/[hash1]/[hash2]/[f]', $variable);
 	return $return;
 }
 
@@ -823,6 +729,7 @@ function filter($id, $input, $filters = array()) {
 			$input = eval("return $rule");
 		} elseif(substr($rule, 0, 8) == 'include:') {
 			$newid = substr($rule, 8);
+			if(!a_is_int($newid)) continue;
 			$input = filter($newid, $input, $filters);
 		} elseif(substr($rule, 0, 8) == 'replace:') {
 			$rule = substr($rule, 8);
@@ -880,46 +787,5 @@ function calstoremethod($template, $variables) {
 		$template = str_replace("[$k]", $v, $template);
 	}
 	return $template;
-}
-
-function refreshitemnum($ids, $type = 'category') {
-	global $tablepre, $db;
-	static $categories;
-	if(is_array($ids)) {
-		$ids = array_unique($ids);
-	} else {
-		$ids = array($ids);
-	}
-	if($type == 'category') {
-		foreach($ids as $id) {
-			if($id == 0) continue;
-			if(empty($categories[$id])) $categories[$id] = getcategorycache($id);
-			$allitems = $items = $db->get_by('COUNT(*)', 'items', "category='$id'");
-			if(!empty($categories[$id]['subcategories'])) {
-				foreach($categories[$id]['subcategories'] as $subcategory) {
-					if(empty($categories[$subcategory])) $categories[$subcategory] = getcategorycache($subcategory);
-					$allitems += $categories[$subcategory]['allitems'];
-				}
-			}
-			$db->update('categories', array('items' => $items, 'allitems' => $allitems), "id='$id'");
-		}
-	} elseif($type == 'section') {
-		foreach($ids as $id) {
-			$items = $db->get_by('COUNT(*)', 'items', "section='$id'");
-			$db->update('sections', array('items' => $items), "id='$id'");
-		}
-	} elseif($type == 'editor') {
-		if(count($ids) == 0) {
-			$ids = array();
-			$query = $db->query_by('editor', 'admins');
-			while($editor = $db->fetch_array($query)) {
-				$ids[] = $editor['editor'];
-			}
-		}
-		foreach($ids as $id) {
-			$items = $db->get_by('COUNT(*)', 'items', "editor='$id'");
-			$db->update('admins', array('items' => $items), "editor='$id'");
-		}
-	}
 }
 ?>

@@ -9,33 +9,22 @@ class mysqlstuff extends dbstuff{
 	var $db;
 	function mysqlstuff($config = array()) {
 		global $pconnect, $lan;
-		$error = 'ERROR:Connect to the database failed, please check the database information!';
-		if(isset($lan['connecterror'])) $error = $lan['connecterror'];
-		if((isset($pconnect) && $pconnect == 1) && function_exists('mysql_pconnect')) {
+		if((!isset($pconnect) || $pconnect == 1) && function_exists('mysql_pconnect')) {
 			if(!$connect = mysql_pconnect($config['dbhost'], $config['dbuser'], $config['dbpw'])) {
-				debug($error, 1);
+				debug($lan['connecterror'], 1);
 			}
 		} else {
 			if(!$connect = mysql_connect($config['dbhost'], $config['dbuser'], $config['dbpw'])) {
-				debug($error, 1);
+				debug($lan['connecterror'], 1);
 			}
 		}
 		$this->db = $connect;
 		$this->charset = $config['charset'];
 		$this->version = $this->version();
 		$this->dbname = $config['dbname'];
-		
-		$this->dbhost = $config['dbhost'];
-		$this->dbuser = $config['dbuser'];
-		$this->dbpw = $config['dbpw'];
-		
 		if($this->version > '4.1') mysql_query("SET NAMES '{$config['charset']}'", $connect);
 		if($this->version > '5.0') mysql_query("SET sql_mode=''", $connect);
-		if($config['dbname']) $this->dbexist = mysql_select_db($config['dbname'], $connect);
-	}
-	function selectdb($dbname) {
-		mysql_select_db($dbname, $this->db);
-		$this->dbname = $dbname;
+		if($config['dbname']) mysql_select_db($config['dbname'], $connect);
 	}
 	function _commit() {}
 	function _fetch_array($query) {
@@ -95,12 +84,8 @@ class mysqlstuff extends dbstuff{
 	function createtable($tablename, $data) {
 		$tables = $this->getalltables();
 		if(in_array($this->fulltablename($tablename), $tables)) return false;
-		if(!isset($data['charset'])) $data['charset'] = $this->charset;
 		$sql = mysql_createtable($this->fulltablename($tablename), $data);
-		return $this->query($sql, 1);
-	}
-	function emptytable($table) {
-		$this->query("TRUNCATE TABLE `$table`");
+		return $this->query($sql);
 	}
 	function gettableinfo($table) {
 		$return = array();
