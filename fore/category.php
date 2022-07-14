@@ -15,9 +15,6 @@ if(isset($get_id) && a_is_int($get_id)) {
 } elseif(isset($get_category)) {
 	$name = trim($get_category);
 	$id = $db->get_by('id', 'categories', "category='".$db->addslashes($name)."'", 'id');
-} elseif(isset($get_originalpath)) {
-	$originalpath = trim($get_originalpath);
-	$id = $db->get_by('id', 'categories', "path='".$db->addslashes($originalpath)."'", 'id');
 }
 if(empty($id)) fore404();
 $global_category = $id;
