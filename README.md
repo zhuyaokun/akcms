@@ -11,3 +11,4 @@ nginx conf
 	}
 
 这个版本是馒头辛苦修改的，能支持 PHP 7+
+这个版本只支持sqlite3，不支持mysql
