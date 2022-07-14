@@ -8,20 +8,10 @@ class sqlitestuff extends dbstuff{
 	var $dbname;
 	var $db;
 	function sqlitestuff($config = array()) {
-		global $lan;
-		if(!$_db = sqlite_open(AK_ROOT.$config['dbname'], 0666, $error)) {
-			if(strpos($error, 'unable to open database') === 0) $error = 'ERROR:Unable to open database!';
-			if(isset($lan['connecterror'])) $error = $lan['connecterror'];
-			debug($error, 1);
-		}
-		$this->db = $_db;
+		$this->db = sqlite_open(AK_ROOT.$config['dbname']);
 		$this->version = $this->version();
 		$this->dbname = $config['dbname'];
 		$this->query("BEGIN;");
-	}
-	function selectdb($dbname) {
-		$this->db = sqlite_open($dbname);
-		$this->dbname = $dbname;
 	}
 	function _commit() {
 		$this->query('COMMIT;');
@@ -83,9 +73,6 @@ class sqlitestuff extends dbstuff{
 	function createtable($tablename, $data) {
 		$sql = sqlite_createtable($this->fulltablename($tablename), $data);
 		return $this->query($sql);
-	}
-	function emptytable($table) {
-		$this->query("delete from $table");
 	}
 	function gettableinfo($table) {
 		$return = array();

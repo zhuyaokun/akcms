@@ -1,6 +1,6 @@
 <?php
 if(!defined('CORE_ROOT')) exit;
-if(function_exists('date_default_timezone_set')) date_default_timezone_set('UTC');
+date_default_timezone_set('UTC');
 $start_time =  microtime(1);
 $register_globals = @ini_get('register_globals');
 if($register_globals) {
@@ -39,15 +39,12 @@ if(isset($_SERVER['HTTP_HOST'])) {
 		if(!empty($_SERVER['QUERY_STRING'])) $currenturl .= '?'.$_SERVER['QUERY_STRING'];
 	}
 	ob_start();
-	$pid = 0;
 } else {
 	$__callmode = 'command';
-	$pid = getmypid();
 }
 require_once CORE_ROOT.'include/common.func.php';
-if(file_exists(CORE_ROOT.'configs/config.inc.php')) require CORE_ROOT.'configs/config.inc.php';
-if(file_exists(AK_ROOT.'configs/config.inc.php')) {
-	require AK_ROOT.'configs/config.inc.php';
+if(ifinstalled()) {
+	if(file_exists(AK_ROOT.'configs/config.inc.php')) require AK_ROOT.'configs/config.inc.php';
 } else {
 	$template_path = 'ak';
 	$timedifference = 0;
@@ -61,10 +58,10 @@ $mtime = explode(' ', microtime());
 $thetime = time() + $timedifference * 3600;
 
 require_once CORE_ROOT.'include/cache.func.php';
-require_once CORE_ROOT.'include/global.func.php';
-require_once CORE_ROOT.'include/service.func.php';
-require_once CORE_ROOT.'include/task.file.func.php';
-if(empty($ifdebug)) set_error_handler("akerror");
+//require_once CORE_ROOT.'include/render.inc.bin';
+require_once CORE_ROOT.'include/render.inc.php';
+require_once(CORE_ROOT.'include/global.func.php');
+require_once(CORE_ROOT.'include/service.func.php');
 if(file_exists(AK_ROOT.'configs/hook.php')) require_once AK_ROOT.'configs/hook.php';
 foreach($GLOBALS as $_key => $_value) {
 	if(isobscure($_key)) unset($$_key);
@@ -75,20 +72,17 @@ $db_setname = caldbsetname($charset);
 if(empty($ifdebug) && ifinstalled()) {
 	error_reporting(0);
 } else {
-	if(defined('E_DEPRECATED')) {
-		error_reporting(E_ALL ^ E_DEPRECATED);
-	} else {
-		error_reporting(E_ALL);
-	}
+	error_reporting(E_ALL);
 }
 if(!isset($fore_root)) $fore_root = AK_ROOT.'../';
 define('FORE_ROOT', $fore_root);
 if(isset($ak_url)) define('AK_URL', $ak_url);
+
 if($__callmode == 'web') {
 	$_p1 = strrpos(substr(AK_ROOT, 0, -1), $separator);
 	$system_root = substr(AK_ROOT, $_p1 + 1, -1);
-	$_p2 = strripos($currenturl, "/{$system_root}/") + 1;
-	if($_p2 == 1 && strripos($currenturl, "/{$system_root}/") === false) {
+	$_p2 = ak_strrpos($currenturl, "/{$system_root}/") + 1;
+	if($_p2 == 1 && strrpos($currenturl, "/{$system_root}/") === false) {
 		$_p3 = strpos($currenturl, '?');
 		if($_p3 === false) {
 			$_u1 = $currenturl;
@@ -106,7 +100,6 @@ if($__callmode == 'web') {
 	}
 	unset($_p1, $_p2, $_u1);
 }
-require_once CORE_ROOT.'include/render.inc.bin';
 if(PHP_VERSION < '4.1.0') {
 	$_GET = $HTTP_GET_VARS;
 	$_POST = $HTTP_POST_VARS;
@@ -115,12 +108,7 @@ if(PHP_VERSION < '4.1.0') {
 	$_ENV = $HTTP_ENV_VARS;
 	$_FILES = $HTTP_POST_FILES;
 }
-$magic_quotes_gpc = @get_magic_quotes_gpc();
-if($magic_quotes_gpc) {
-	$_POST = unaddslashes($_POST);
-	$_GET = unaddslashes($_GET);
-	$_COOKIE = unaddslashes($_COOKIE);
-}
+
 @extract($_POST, EXTR_PREFIX_ALL, 'post');
 @extract($_GET, EXTR_PREFIX_ALL, 'get');
 @extract($_FILES, EXTR_PREFIX_ALL, 'file');
@@ -130,7 +118,7 @@ if(ifinstalled()) {
 	$settings = getcache('settings');
 	@extract($settings, EXTR_PREFIX_ALL, 'setting');
 }
-if($__callmode == 'web') header('Content-Type:text/html;charset='.$header_charset);
+header('Content-Type:text/html;charset='.$header_charset);
 $homepage = '';
 if(!empty($setting_homepage)) {
 	if(substr($setting_homepage, -1) != '/') $setting_homepage .= '/';
@@ -143,34 +131,25 @@ if(!empty($setting_systemurl)) {
 	if(substr($setting_systemurl, -1) != '/') $setting_systemurl .= '/';
 	$systemurl = $setting_systemurl;
 } else {
-	if('web' == $__callmode) $systemurl = 'http://'.$_SERVER['HTTP_HOST'].AK_URL;
+	if('web' == $__callmode) $systemurl = AK_URL;
 }
 $language = isset($setting_language) ? $setting_language : 'chinese';
+$admin_id = '';
+if(isset($cookie_auth)) $admin_id = authcode($cookie_auth, 'DECODE');
+$onlineip = '127.0.0.1';
 if('web' == $__callmode) {
-	$admin_id = adminid();
-	$onlineip = $_SERVER['REMOTE_ADDR'];
+	if(getenv('HTTP_CLIENT_IP') && strcasecmp(getenv('HTTP_CLIENT_IP'), 'unknown')) {
+		$onlineip = getenv('HTTP_CLIENT_IP');
+	} elseif(getenv('HTTP_X_FORWARDED_FOR') && strcasecmp(getenv('HTTP_X_FORWARDED_FOR'), 'unknown')) {
+		$onlineip = getenv('HTTP_X_FORWARDED_FOR');
+	} elseif(getenv('REMOTE_ADDR') && strcasecmp(getenv('REMOTE_ADDR'), 'unknown')) {
+		$onlineip = getenv('REMOTE_ADDR');
+	} elseif(isset($_SERVER['REMOTE_ADDR']) && $_SERVER['REMOTE_ADDR'] && strcasecmp($_SERVER['REMOTE_ADDR'], 'unknown')) {
+		$onlineip = $_SERVER['REMOTE_ADDR'];
+	}
+	$onlineip = preg_replace("/^([\d\.]+).*/", "\\1", $onlineip);
 }
 unset($HTTP_GET_VARS, $HTTP_POST_VARS, $HTTP_COOKIE_VARS, $HTTP_SERVER_VARS, $HTTP_ENV_VARS, $HTTP_POST_FILES, $_REQUEST);
-
-function adminid() {
-	global $dbpw, $dbname, $codekey;
-	if(!isset($dbpw)) $dbpw = '';
-	$auth = akgetcookie('auth');
-	if(empty($auth)) return false;
-	if(substr_count($auth, '|') != 1) return false;
-	list($adminid, $verify) = explode('|', $auth);
-	$md5 = md5("$adminid|$dbpw|$dbname|$codekey");
-	if($md5 != $verify) return false;
-	return $adminid;
-}
-
-function setlogin($adminid, $expire = 0) {
-	global $dbpw, $dbname, $codekey;
-	if(!isset($dbpw)) $dbpw = '';
-	$verify = md5("$adminid|$dbpw|$dbname|$codekey");
-	aksetcookie('auth', "$adminid|$verify", $expire);
-}
-
 function authcode($string, $operation, $key = '') {
 	$key = md5($key ? $key : $GLOBALS['codekey']);
 	$key_length = strlen($key);

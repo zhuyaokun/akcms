@@ -10,37 +10,19 @@ class pdomysqlstuff extends dbstuff{
 	function pdomysqlstuff($config = array()) {
 		global $currenturl, $dbexists;
 		$dsn = "mysql:host={$config['dbhost']}";
-		if(strpos($currenturl, 'file=install') !== false || isset($dbexist)) $dsn .= ";dbname={$config['dbname']}";
-		
+		if(strpos($currenturl, 'file=install') === false || isset($dbexists)) $dsn .= ";dbname={$config['dbname']}";
 		try {
-    			$this->db = new PDO($dsn, $config['dbuser'], $config['dbpw']);
-		} catch (PDOException $e) {
-			if(strpos($e->getMessage(), 'Unknown database') !== false) {
-				$this->dbexist = 0;
-				$dsn = "mysql:host={$config['dbhost']}";
-				$this->db = new PDO($dsn, $config['dbuser'], $config['dbpw']);
-				return;
-			}
-			if(strpos($e->getMessage(), 'YES') !== false) {
-				$this->pdosecreterror = 1;
-				return;
-			}
+			$this->db = new PDO($dsn, $config['dbuser'], $config['dbpw']);
+		} catch (Exception $e) {
+			$this->error = $e->getMessage();
 			return;
 		}
 		$this->db->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
 		$this->version = $this->version();
 		$this->dbname = $config['dbname'];
-		$this->dbhost = $config['dbhost'];
-		$this->dbuser = $config['dbuser'];
-		$this->dbpw = $config['dbpw'];
 		if($this->version > '4.1') $this->db->query("SET NAMES '{$config['charset']}'");
 		if($this->version > '5.0') $this->db->query("SET sql_mode=''");
-		$this->db->query("USE ".$this->dbname);
 		$this->db->beginTransaction();
-	}
-	function selectdb($dbname) {
-		$this->db->query("USE ".$dbname);
-		$this->dbname = $dbname;
 	}
 	function _commit() {
 		$this->db->commit();
@@ -100,12 +82,8 @@ class pdomysqlstuff extends dbstuff{
 		return $this->db->rowCount();
 	}
 	function createtable($tablename, $data) {
-		if(!isset($data['charset'])) $data['charset'] = $this->charset;
 		$sql = mysql_createtable($this->fulltablename($tablename), $data);
 		return $this->query($sql);
-	}
-	function emptytable($table) {
-		$this->query("TRUNCATE TABLE `$table`");
 	}
 	function gettableinfo($table) {
 		$return = array();

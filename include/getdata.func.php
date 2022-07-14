@@ -2,30 +2,15 @@
 function operatehtml($html, $params, $starttime) {
 	global $ifdebug;
 	$endtime = akmicrotime();
-	if(empty($params['noelapse']) && empty($params['assign']) && (!empty($ifdebug) || !empty($params['elapse']))) $html.='<!--'.msformat($endtime - $starttime).'-->';
+	if(empty($params['noelapse']) && (!empty($ifdebug) || !empty($params['elapse']))) $html.='<!--'.msformat($endtime - $starttime).'-->';
 	if(!empty($params['return'])) {
 		return $html;
 	} elseif(!empty($params['assign'])) {
 		if(!empty($params['explode'])) $html = explode($params['explode'], $html);
-		$GLOBALS['tpl']->assign(array($params['assign'] => $html));
+		$GLOBALS['html_smarty']->_tpl_vars[$params['assign']] = $html;
 	} else {
 		echo $html;
 	}
-}
-
-function gettime($params) {
-	global $thetime;
-	$starttime = akmicrotime();
-	$params = operateparams('time', $params);
-	$time = $thetime;
-	if(!empty($params['time'])) $time = $params['time'];
-	$fields = str_split('YmdHis');
-	$datas = array();
-	foreach($fields as $field) {
-		$datas[0][$field] = date($field, $time);
-	}
-	$html = renderdata($datas, $params);
-	return operatehtml($html, $params, $starttime);
 }
 
 function getitems($params) {
@@ -95,31 +80,17 @@ function getitemsdata($params) {
 				if(strpos($params['template'], '[data_highlight]') !== false) $items[$text['itemid']]['data_highlight'] = highlight($items[$text['itemid']]['data'], $params['keywords']);
 			}
 		}
-		preg_match_all("/\[%?#([a-zA-Z0-9]+)\]/i", $params['template'], $matches);
-		$actionlist = $matches[1];
-		if(!empty($actionlist) && !empty($params['uid'])) {
-			$query = $db->query_by('*', 'actions', "uid='{$params['uid']}' AND iid IN ($_ids)");
-			while($row = $db->fetch_array($query)) {
-				$actions[$row['iid']][$row['action']] = $row['value'];
-			}
-		}
 	}
 	$j = 0;
 	$datas = array();
 	foreach($items as $item) {
 		$j ++;
-		if(!empty($actionlist)) {
-			foreach($actionlist as $action) {
-				$item['#'.$action] = 0;
-				if(isset($actions[$item['id']][$action])) $item['#'.$action] = $actions[$item['id']][$action];
-			}
-		}
 		$c = $item['category'];
 		if(!isset($categories[$c])) $categories[$c] = getcategorycache($c);
-		list($item['y'], $item['m'], $item['d'], $item['h'], $item['i'], $item['s'], $item['sy'], $item['sm'], $item['sd'], $item['F'], $item['M'], $item['l'], $item['D'], $item['r']) = explode('#', date('Y#m#d#H#i#s#y#n#j#F#M#l#D#r', $item['dateline']));
+		list($item['y'], $item['m'], $item['d'], $item['h'], $item['i'], $item['s'], $item['sy'], $item['sm'], $item['sd'], $item['F'], $item['M'], $item['l'], $item['D'], $item['r']) = explode(' ', date('Y m d H i s y n j F M l D r', $item['dateline']));
 		if(strpos($params['template'], 'last_') !== false) {
 			if($item['lastupdate'] == 0) $item['lastupdate'] = $item['dateline'];
-			list($item['last_y'], $item['last_m'], $item['last_d'], $item['last_h'], $item['last_i'], $item['last_s'], $item['last_sy'], $item['last_sm'], $item['last_sd'], $item['last_F'], $item['last_M'], $item['last_l'], $item['last_D'], $item['last_r']) = explode('#', date('Y#m#d#H#i#s#y#n#j#F#M#l#D#r', $item['lastupdate']));
+			list($item['last_y'], $item['last_m'], $item['last_d'], $item['last_h'], $item['last_i'], $item['last_s'], $item['last_sy'], $item['last_sm'], $item['last_sd']) = explode(' ', date('Y m d H i s y n j', $item['lastupdate']));
 		}
 		for($k = 1; $k <= 4; $k ++) {
 			$item['url'.$k] = itemurl($item['id'], $k, $item, $categories[$c]);
@@ -148,13 +119,10 @@ function getitemsdata($params) {
 		$item['categoryhomepath'] = $categories[$item['categoryid']]['fullpath'];
 		$item['categoryurl'] = getcategoryurl($item['categoryid']);
 		$item['categoryup'] = $categories[$item['categoryid']]['categoryup'];
-		$item['sectionurl'] = getsectionurl($item['sectionid']);
-		$item['sectionalias'] = $sections[$item['sectionid']]['alias'];
 		$item['itemid'] = $item['id'];
 		$item['aimurl'] = str_replace('[home]', $homepage, $item['aimurl']);
 		$item['id'] = $j;
 		$item['realid'] = $j + $params['start'] - 1;
-		if(empty($item['picture'])) $item['picture'] = $params['nopicture'];
 		if(!empty($item['picture'])) {
 			if(strpos($params['template'], '[picture:') !== false) {
 				$_picture = getfield('[picture:', ']', $params['template']);
@@ -167,13 +135,14 @@ function getitemsdata($params) {
 			}
 			$item['picture'] = pictureurl($item['picture'], $attachurl);
 		}
+		if(empty($item['picture'])) $item['picture'] = $params['nopicture'];
 		if(strpos($params['template'], '[author_encode]') !== false) {
 			$item['author_encode'] = urlencode($item['author']);
 		}
 		$_item = array();
 		foreach($params['fields'] as $k) {
 			if(strpos($k, 'picture') === false) {
-				$_p = max(strpos($k , ':'), strpos($k , '#'), strpos($k , '@'));
+				$_p = strpos($k , ':');
 				if($_p !== false) {
 					$k = substr($k, 0, $_p);
 				}
@@ -188,11 +157,11 @@ function getitemsdata($params) {
 function getitemsql($params) {
 	global $tablepre, $db, $thetime, $dbtype, $setting_ifdraft;
 	$params['start'] = max(0, $params['start'] - 1);
-	if(empty($params['sid']) || 1) {
+	if(empty($params['sid'])) {
 		$sql_where = '1';
 		$leftjoin = '';
 		if(!empty($setting_ifdraft)) {
-			if(empty($params['ignoredraft'])) $sql_where .= " AND draft=0";
+			$sql_where .= " AND draft=0";
 		}
 		if(!empty($params['category'])) {
 			if($params['includesubcategory']) {
@@ -251,10 +220,10 @@ function getitemsql($params) {
 			$sql_where .= " AND dateline>='$_startpoint' AND dateline<'$_endpoint'";
 		}
 		if($params['last'] != 0) {
-			$sql_where .= " AND {$tablepre}_items.id>'{$params['last']}'";
+			$sql_where .= " AND id>'{$params['last']}'";
 		}
 		if($params['next'] != 0) {
-			$sql_where .= " AND {$tablepre}_items.id<'{$params['next']}'";
+			$sql_where .= " AND id<'{$params['next']}'";
 		}
 		if(!empty($params['order'])) $sql_where .= " AND orderby>='{$params['order']}'";
 		if(!empty($params['orderby2'])) $sql_where .= " AND orderby2='{$params['orderby2']}'";
@@ -268,6 +237,9 @@ function getitemsql($params) {
 		if(!empty($params['author'])) {
 			$sql_where .= " AND author='{$params['author']}'";
 		}
+		if(!empty($params['initial'])) {
+			$sql_where .= " AND initial='".strtolower($params['initial'])."'";
+		}
 		if(!empty($params['keywords'])) {
 			if(!empty($params['searchtext'])) $leftjoin = "LEFT JOIN {$tablepre}_texts ON {$tablepre}_texts.itemid={$tablepre}_items.id";
 			$array_keywords = explode(',', $params['keywords']);
@@ -279,8 +251,6 @@ function getitemsql($params) {
 				}
 			}
 			$sql_where .= " AND ($sql_keywords)";
-		} elseif(isset($params['keywords'])) {
-			$sql_where .= ' AND 0';
 		}
 		if($params['timelimit'] == 1) $sql_where .= " AND dateline < '$thetime'";
 		if(!empty($params['where'])) {
@@ -291,6 +261,7 @@ function getitemsql($params) {
 			$sql_where .= " AND ".$params['where'];
 		}
 		$orderby = order_operate($params['orderby'], 'items');
+		
 		if(!empty($params['sqlorderby'])) {
 			$sqlorderby = 'ORDER BY '.$params['sqlorderby'];
 		} else {
@@ -305,7 +276,6 @@ function getitemsql($params) {
 				$sqlorderby = 'ORDER BY '.$orderby;
 			}
 		}
-		hookfunction('getitems', $sql_where, $params);
 		if(!empty($params['bandindex'])) {
 			$_r = $db->get_one("SELECT COUNT(*) as c FROM {$tablepre}_items {$leftjoin} WHERE $sql_where");
 			$count = $_r['c'];
@@ -316,6 +286,35 @@ function getitemsql($params) {
 		$inids = $db->querytoarray($sql, '', $params['num']);
 		foreach($inids as $k => $v) {
 			$inids[$k] = $v['itemid'];
+		}
+	} else {
+		if(empty($params['keywords'])) {
+			$inids = array();
+		} else {
+			require_once(CORE_ROOT.'include/se.func.php');
+			$sid = $params['sid'];
+			$ses = getcache('ses');
+			$se = $ses[$sid];
+			$keywords = trim($params['keywords']);
+			if($_offset = strpos($keywords, ',')) $keywords = substr($keywords, 0, $_offset);
+			if($_offset = strpos($keywords, '/')) $keywords = substr($keywords, 0, $_offset);
+			$keywords = explode(' ', $keywords);
+			if(count($keywords) == 1) {
+				$index = readsortedindex($se, $keywords, $params['orderby'], $params['start'], $params['num']);
+				$count = $index['count'];
+				$index = $index['value'];
+			} else {
+				$index = readsortedindex($se, $keywords, $params['orderby'], $params['start'], $params['num']);
+				$count = $index['count'];
+				$index = $index['value'];
+			}
+			if(!empty($params['bandindex'])) {
+				$GLOBALS['index'.$params['bandindex'].'count'] = $count;
+				$GLOBALS['index'.$params['bandindex'].'ipp'] = $params['num'];
+			}
+			if(empty($index)) $index = array();
+			$GLOBALS['inids'] = $inids = $index;
+			$sqlorderby = '';
 		}
 	}
 	if(!empty($inids)) {
@@ -353,7 +352,7 @@ function gettextsdata($params) {
 	$categories = $items = array();
 	$sql = gettextssql($params);
 	$_texts = $db->querytoarray($sql);
-	$j = 0;//ĞòºÅ
+	$j = 0;//åºå·
 	$datas = array();
 	foreach($_texts as $text) {
 		$j ++;
@@ -410,6 +409,7 @@ function getcategories($params) {
 }
 
 function getcategoriesdata($params) {
+	
 	global $db;
 	if(isset($params['childcategory'])) {
 		$_c = $params['childcategory'];
@@ -425,13 +425,15 @@ function getcategoriesdata($params) {
 		$sql = getcategoriessql($params);
 		$_categories = $db->querytoarray($sql);
 	}
-	$j = 0;//ĞòºÅ
+	$j = 0;//åºå·
 	$datas = array();
 	foreach($_categories as $category) {
 		$j ++;
 		$category['url'] = getcategoryurl($category['id']);
 		$category['categoryid'] = $category['id'];
 		$category['id'] = $j;
+		
+		
 		if(!empty($category['picture'])) {
 			if(strpos($params['template'], '[picture:') !== false) {
 				$_picture = getfield('[picture:', ']', $params['template']);
@@ -445,6 +447,9 @@ function getcategoriesdata($params) {
 			$category['picture'] = pictureurl($category['picture'], $attachurl);
 		}
 		if(empty($category['picture'])) $category['picture'] = $params['nopicture'];
+		
+		
+		
 		if(is_array($category['subcategories'])) $category['subcategories'] = implode(',', $category['subcategories']);
 		$datas[] = $category;
 		
@@ -477,9 +482,6 @@ function getcategoriessql($params) {
 	}
 	if(!empty($params['order'])) {
 		$sql_where .= " AND orderby>={$params['order']}";
-	}
-	if(!empty($params['module'])) {
-		$sql_where .= " AND module='{$params['module']}'";
 	}
 	if(!empty($params['bandindex'])) {
 		$_r = $db->get_one("SELECT COUNT(*) as c FROM {$tablepre}_categories WHERE $sql_where");
@@ -521,8 +523,8 @@ function getcommentsdata($params) {
 		$comment['title'] = ak_htmlspecialchars($comment['title']);
 		$comment['username'] = ak_htmlspecialchars($comment['username']);
 		$comment['review'] = ak_htmlspecialchars($comment['review']);
-		list($comment['y'], $comment['m'], $comment['d'], $comment['h'], $comment['i'], $comment['s'], $comment['sy'], $comment['sm'], $comment['sd']) = explode('#', date('Y#m#d#H#i#s#y#n#j', $comment['dateline']));
-		list($comment['ry'], $comment['rm'], $comment['rd'], $comment['rh'], $comment['ri'], $comment['rs'], $comment['rsy'], $comment['rsm'], $comment['rsd']) = explode('#', date('Y#m#d#H#i#s#y#n#j', $comment['reviewtime']));
+		list($comment['y'], $comment['m'], $comment['d'], $comment['h'], $comment['i'], $comment['s'], $comment['sy'], $comment['sm'], $comment['sd']) = explode(' ', date('Y m d H i s y n j', $comment['dateline']));
+		list($comment['ry'], $comment['rm'], $comment['rd'], $comment['rh'], $comment['ri'], $comment['rs'], $comment['rsy'], $comment['rsm'], $comment['rsd']) = explode(' ', date('Y m d H i s y n j', $comment['reviewtime']));
 		$datas[] = $comment;
 	}
 	return $datas;
@@ -545,53 +547,6 @@ function getcommentssql($params) {
 	}
 	$sqlorderby = order_operate($params['orderby'], 'comments');
 	return "SELECT * FROM {$tablepre}_comments WHERE {$sql_where} ORDER BY {$sqlorderby} LIMIT {$params['start']},{$params['num']}";
-}
-
-function getsections($params) {
-	global $cache_memory, $ifdebug, $sections;
-	$starttime = akmicrotime();
-	$params = operateparams('sections', $params);
-	$data = getsectionsdata($params);
-	$html = renderdata($data, $params);
-	return operatehtml($html, $params, $starttime);
-}
-
-function getsectionsdata($params) {
-	global $db;
-	$data = array();
-	$j = 0;
-	$sql = getsectionssql($params);
-	$data = $db->querytoarray($sql);
-	foreach($data as $k => $v) {
-		$j++;
-		$data[$k]['sectionid'] = $data[$k]['id'];
-		$data[$k]['id'] = $j;
-		unset($data[$k]['sectionhomemethod']);
-            	unset($data[$k]['defaulttemplate']);
-            	unset($data[$k]['listtemplate']);
-            	unset($data[$k]['html']);
-	}
-	return $data;
-}
-
-function getsectionssql($params){
-	global $tablepre, $db;
-	$params['start'] = max(0, $params['start'] - 1);
-	$sql_where = '1';
-	if(!empty($params['id'])) {
-		if(strpos($params['id'], ',') === false) {
-			$sql_where .= " AND id = '{$params['id']}'";
-		} else {
-			$sql_where .= " AND id IN ({$params['id']})";
-		}
-	}
-	if(!empty($params['skipid'])) {
-		$sql_where .= " AND id NOT IN ({$params['skipid']})";
-	}
-	if(!empty($params['alias'])) {
-		$sql_where .= " AND alias='{$params['alias']}'";
-	}
-	return "SELECT * FROM {$tablepre}_sections WHERE {$sql_where} LIMIT {$params['start']},{$params['num']}";
 }
 
 function getlists($params) {
@@ -704,14 +659,6 @@ function getattachmentsdata($params) {
 			$attachment['itemurl'] = itemurl($item['id'], 1, $item);
 		}
 		if(empty($attachment['originalname'])) $attachment['originalname'] = basename($attachment['filename']);
-		if(!empty($attachment['ext'])) {
-			$attachment['ext'] = unserialize($attachment['ext']);
-			foreach($attachment['ext'] as $key => $v) {
-				$attachment['_'.$key] = $v;
-			}
-			unset($attachment['ext']);
-		}
-		list($attachment['y'], $attachment['m'], $attachment['d'], $attachment['h'], $attachment['i'], $attachment['s'], $attachment['sy'], $attachment['sm'], $attachment['sd'], $attachment['F'], $attachment['M'], $attachment['l'], $attachment['D'], $attachment['r']) = explode(' ', date('Y m d H i s y n j F M l D r', $attachment['dateline']));
 		$datas[] = $attachment;
 	}
 	return $datas;
@@ -724,7 +671,6 @@ function getattachmentsql($params) {
 	if(!empty($params['id'])) $sql_where .= " AND id IN ({$params['id']})";
 	if(!empty($params['itemid'])) $sql_where .= " AND itemid IN ({$params['itemid']})";
 	if(!empty($params['category'])) $sql_where .= " AND category IN ({$params['category']})";
-	if(!empty($params['ispicture'])) $sql_where .= " AND ispicture=0";
 	$sqlorderby = order_operate($params['orderby'], 'attachments');
 	$count = $db->get_by('COUNT(*) as c', 'attachments', $sql_where);
 	if(!empty($params['bandindex'])) {
@@ -732,6 +678,78 @@ function getattachmentsql($params) {
 		$GLOBALS['index'.$params['bandindex'].'ipp'] = $params['num'];
 	}
 	return "SELECT * FROM {$tablepre}_attachments WHERE {$sql_where} ORDER BY {$sqlorderby} LIMIT {$params['start']},{$params['num']}";
+}
+
+function getkeywords($params) {
+	global $cache_memory, $ifdebug;
+	$starttime = akmicrotime();
+	$params = operateparams('keywords', $params);
+	if(isset($cache_memory[$params['cachekey']])) {
+		$html = $cache_memory[$params['cachekey']];
+	} elseif(!$html = getcachedata($params)) {
+		$datas = getkeywordsdata($params);
+		$html = renderdata($datas, $params);
+		if(!empty($GLOBALS['batchcreateitemflag']) && empty($params['nocache'])) $cache_memory[$params['cachekey']] = $html;
+		if($params['expire'] > 0) setcachedata($params, $html);
+	}
+	return operatehtml($html, $params, $starttime);
+}
+
+function getkeywordsdata($params) {
+	global $db, $homepage;
+	$sid = $params['sid'];
+	$se = $db->get_by('*', 'ses', "id=$sid");
+	$value = ak_unserialize($se['value']);
+	$sql = getkeywordssql($params);
+	$query = $db->query($sql);
+	$keywords = array();
+	while($keyword = $db->fetch_array($query)) {
+		$keywords[$keyword['id']] = $keyword;
+	}
+	$j = 0;
+	$datas = array();
+	foreach($keywords as $keyword) {
+		$j ++;
+		$variables['keyword'] = urlencode($keyword['keyword']);
+		$keyword['url'] = $homepage.calstoremethod($value['storemethod'], $variables);
+		$keyword['keyword_url'] = rawurlencode($keyword['keyword']);
+		$keyword['keyword_html'] = ak_htmlspecialchars($keyword['keyword']);
+		$keyword['kid'] = $keyword['id'];
+		$keyword['id'] = $j;
+		$keyword['realid'] = $j + $params['start'] - 1;
+		$datas[] = $keyword;
+	}
+	return $datas;
+}
+
+function getkeywordssql($params) {
+	global $tablepre, $dbtype, $db;
+	$params['start'] = max(0, $params['start'] - 1);
+	$sql_where = "sid='{$params['sid']}'";
+	if(isset($params['keywords'])) {
+		$keywords = tidyitemlist($params['keywords'], ',', 0);
+		$keywords = explode(',', $keywords);
+		foreach($keywords as $k => $v) {
+			$keywords[$k] = "'".$db->addslashes($v)."'";
+		}
+		if(!empty($keywords)) {
+			$keywords = implode(',', $keywords);
+			$sql_where .= " AND keyword IN ($keywords)";
+		}
+	}
+	if(!empty($params['morethan'])) {
+		$sql_where .= " AND num>'{$params['morethan']}'";
+	}
+	if(!empty($params['initial'])) {
+		$sql_where .= " AND initial='".strtolower($params['initial'])."'";
+	}
+	$sqlorderby = order_operate($params['orderby'], 'keywords');
+	$count = $db->get_by('COUNT(*) as c', 'keywords', $sql_where);
+	if(!empty($params['bandindex'])) {
+		$GLOBALS['index'.$params['bandindex'].'count'] = $count;
+		$GLOBALS['index'.$params['bandindex'].'ipp'] = $params['num'];
+	}
+	return "SELECT * FROM {$tablepre}_keywords WHERE {$sql_where} ORDER BY {$sqlorderby} LIMIT {$params['start']},{$params['num']}";
 }
 
 function getsqls($params) {
@@ -751,7 +769,7 @@ function getsqls($params) {
 
 function getsqlsdata($params) {
 	global $db;
-	$query = $db->query($params['sql'], 1);
+	$query = $db->query($params['sql']);
 	$j = 0;
 	$datas = array();
 	while($row = $db->fetch_array($query)) {
@@ -769,6 +787,20 @@ function getinfo($params) {
 	foreach($infos as $k => $v) {
 		$html = str_replace("[$k]", $v, $html);
 	}
+	return operatehtml($html, $params, $starttime);
+}
+
+function getuser($params) {
+	global $cache_memory, $ifdebug;
+	$starttime = akmicrotime();
+	$params = operateparams('user', $params);
+	$datas = array();
+	require_once CORE_ROOT.'include/user.class.php';
+	$user = new user();
+	$datas[0]['username'] = calusername($user->username);
+	$datas[0]['uid'] = $user->uid;
+	if(empty($user->uid)) $params['template'] = $params['offlinetemplate'];
+	$html = renderdata($datas, $params);
 	return operatehtml($html, $params, $starttime);
 }
 
@@ -854,19 +886,20 @@ function operateparams($type, $params) {
 	global $lr, $tablepre, $db;
 	if(!isset($db)) $db = db();
 	foreach($params as $key => $value) {
-		if($key == 'sql' || $key == 'where' || $key == 'emptymessage' || $key == 'overflow' || strpos($key, 'template') !== false) continue;
+		if($key == 'where' || $key == 'emptymessage' || strpos($key, 'template') !== false) continue;
 		if($type == 'lists' && $key == 'list') continue;
+		if($type == 'items' && $key == 'overflow') continue;
 		if($type == 'pictures' && $key == 'source') continue;
 		if($type == 'paging' && $key == 'paging') continue;
 		$params[$key] = $db->addslashes($value);
 	}
 	$start = isset($params['start']) && a_is_int($params['start']) ? $params['start'] : 1;
 	$num = empty($params['num']) ? 10 : intval($params['num']);
-	$colspan = !empty($params['colspan']) && a_is_int($params['colspan']) ? $params['colspan'] : 0;//Ñ­»·¼¸´Îºó²åÈëĞŞÕı·û
-	$overflow = empty($params['overflow']) ? '' : $params['overflow'];//ĞŞÕı·û
-	$expire = !empty($params['expire']) && a_is_int($params['expire']) ? $params['expire'] : 0;//»º´æÓĞĞ§ÆÚ£¬µ¥Î»Ãë
-	$length = !empty($params['length']) && a_is_int($params['length']) ? $params['length'] : 0;//³¤¶ÈÏŞÖÆ
-	$strip = empty($params['strip']) ? '' : $params['strip'];//³¬³ö³¤¶ÈÏŞÖÆºóÏÔÊ¾µÄ×Ö·û
+	$colspan = !empty($params['colspan']) && a_is_int($params['colspan']) ? $params['colspan'] : 0;//å¾ªç¯å‡ æ¬¡åæ’å…¥ä¿®æ­£ç¬¦
+	$overflow = empty($params['overflow']) ? '' : $params['overflow'];//ä¿®æ­£ç¬¦
+	$expire = !empty($params['expire']) && a_is_int($params['expire']) ? $params['expire'] : 0;//ç¼“å­˜æœ‰æ•ˆæœŸï¼Œå•ä½ç§’
+	$length = !empty($params['length']) && a_is_int($params['length']) ? $params['length'] : 0;//é•¿åº¦é™åˆ¶
+	$strip = empty($params['strip']) ? '' : $params['strip'];//è¶…å‡ºé•¿åº¦é™åˆ¶åæ˜¾ç¤ºçš„å­—ç¬¦
 	$orderby = empty($params['orderby']) ? '' : tidyitemlist($params['orderby'], ',', 0);
 	$emptymessage = empty($params['emptymessage']) ? '' : $params['emptymessage'];
 	$emptymessage = str_replace('()', '"', $emptymessage);
@@ -888,20 +921,22 @@ function operateparams($type, $params) {
 		'noelapse' => !empty($params['noelapse']),
 	);
 	if($type == 'items') {
-		$return['newinseconds'] = !empty($params['newinseconds']) && a_is_int($params['newinseconds']) ? $params['newinseconds'] : 0;
-		$return['editinseconds'] = !empty($params['editinseconds']) && a_is_int($params['editinseconds']) ? $params['editinseconds'] : 0;
+		$return['newinseconds'] = !empty($params['newinseconds']) && a_is_int($params['newinseconds']) ? $params['newinseconds'] : 0;//æœ€è¿‘å‡ ç§’æ–°å¢
+		$return['editinseconds'] = !empty($params['editinseconds']) && a_is_int($params['editinseconds']) ? $params['editinseconds'] : 0;//æœ€è¿‘å‡ ç§’ä¿®æ”¹
 		$return['section'] = empty($params['section']) ? '' : tidyitemlist($params['section']);
 		$return['skipsection'] = empty($params['skipsection']) ? '' : tidyitemlist($params['skipsection']);
 		$return['category'] = empty($params['category']) ? '' : tidyitemlist($params['category']);
 		$return['skipcategory'] = empty($params['skipcategory']) ? '' : tidyitemlist($params['skipcategory'].',0,');
 		$return['id'] = empty($params['id']) ? '' : tidyitemlist($params['id']);
+		$return['sid'] = (empty($params['sid']) || !a_is_int($params['sid'])) ? '' : $params['sid'];
 		$return['skip'] = empty($params['skip']) ? '' : tidyitemlist($params['skip']);
 		$return['timelimit'] = !empty($params['timelimit']) ? 1 : 0;
-		$return['includesubcategory'] = empty($params['includesubcategory']) ? 0 : 1;
+		$return['includesubcategory'] = empty($params['includesubcategory']) ? 0 : 1;//æ˜¯å¦åŒ…å«ä¸‹çº§åˆ†ç±»ï¼Œé»˜è®¤ä¸åŒ…å«
 		$template = empty($params['template']) ? '[title]<br>' : $params['template'];
 		$return['show_text'] = strpos($template, '[text') !== false ? 1 : 0;
 		$return['order'] = empty($params['order']) ? 0 : $params['order'];
-		$return['picture'] = isset($params['picture']) ? $params['picture'] : 0;
+		$return['keywords'] = isset($params['keywords']) ? $params['keywords'] : '';
+		$return['picture'] = isset($params['picture']) ? $params['picture'] : 0;//>0å¸¦å›¾<0ä¸å¸¦å›¾0éšä¾¿
 		$return['nopicture'] = empty($params['nopicture']) ? '' : $params['nopicture'];
 		$return['last'] = empty($params['last']) ? 0 : $params['last'];
 		$return['year'] = empty($params['year']) ? 0 : $params['year'];
@@ -911,14 +946,38 @@ function operateparams($type, $params) {
 		$return['where'] = empty($params['where']) ? '' : $params['where'];
 		$return['head'] = empty($params['head']) ? 255 : $params['head'];
 		$return['author'] = empty($params['author']) ? '' : $params['author'];
-		preg_match_all("/\[%?(_?#?[a-zA-Z0-9_]+([:#@][^\]]+)?)\]/is", $template, $match);
+		preg_match_all("/\[%?(_?[a-zA-Z0-9_]+(:[^\]]+)?)\]/is", $template, $match);
 		$return['fields'] = $match[1];
+	} elseif($type == 'index') {
+		$return['id'] = empty($params['id']) ? '1' : $params['id'];
+		$return['nohtml'] = !empty($params['nohtml']);
+		$return['page'] = $params['page'];
+		global $global_category;
+		$return['ipp'] = $GLOBALS['index'.$return['id'].'ipp'];
+		if(empty($return['ipp'])) $return['ipp'] = 10;
+		isset($params['ipp']) && $return['ipp'] = $params['ipp'];
+		$return['total'] = $GLOBALS['index'.$return['id'].'count'];
+		isset($params['total']) && $return['total'] = $params['total'];
+		$return['last'] = ceil($return['total'] / $return['ipp']);
+		$return['keywords'] = empty($params['keywords']) ? '' : $params['keywords'];
+		$return['category'] = empty($params['category']) ? '' : $params['category'];
+		$return['item'] = empty($params['item']) ? '' : $params['item'];
+		$baseurl = empty($params['baseurl']) ? '' : $params['baseurl'];
+		if(isset($global_category)) $baseurl = str_replace('[category]', urlencode($global_category), $baseurl);
+		$baseurl = str_replace('[category]', urlencode($return['category']), $baseurl);
+		$return['baseurl'] = $baseurl;
+		$template = empty($params['template']) ? '[indexs]' : $params['template'];
+		$return['linktemplate'] = empty($params['linktemplate']) ? '[link]' : $params['linktemplate'];
+		if(isset($params['firstpage'])) $return['firstpage'] = $params['firstpage'];
+		foreach($params as $key => $value) {
+			if(substr($key, 0, 1) == '_') $return[$key] = $value;
+		}
 	} elseif($type == 'paging') {
 		$return['id'] = empty($params['id']) ? '1' : $params['id'];
 		$return['nohtml'] = !empty($params['nohtml']);
 		$return['page'] = $params['page'];
-		$template = empty($params['template']) ? '[page]' : $params['template'];
-		$return['currenttemplate'] = empty($params['currenttemplate']) ? '<a href="javascript:void(0)">[page]</a>' : $params['currenttemplate'];
+		$return['template'] = empty($params['template']) ? '[page]' : $params['template'];
+		$return['currenttemplate'] = empty($params['currenttemplate']) ? '[page]' : $params['currenttemplate'];
 		$return['paging'] = empty($params['paging']) ? '[paging]' : $params['paging'];
 		$return['total'] = $GLOBALS['index'.$return['id'].'count'];
 		$return['total'] = isset($params['total']) ? $params['total'] : $return['total'];
@@ -959,6 +1018,11 @@ function operateparams($type, $params) {
 		$return['type'] = empty($params['type']) ? 'all' : $params['type'];
 		$template = empty($params['template']) ? '<a href=()[filename]()>[originalname]</a><br />' : $params['template'];
 		$return['orderby'] = empty($return['orderby']) ? 'id' : $return['orderby'];
+	} elseif($type == 'keywords') {
+		$return['sid'] = empty($params['sid']) ? '0' : $params['sid'];
+		$return['morethan'] = empty($params['morethan']) ? '0' : $params['morethan'];
+		$return['orderby'] = empty($return['orderby']) ? 'count' : $return['orderby'];
+		$template = empty($params['template']) ? '[keyword]<br>' : $params['template'];
 	} elseif($type == 'sql') {
 		$return['sql'] = str_replace('[tablepre]', $tablepre, $params['sql']);
 		$template = $params['template'];
@@ -969,8 +1033,6 @@ function operateparams($type, $params) {
 			$return['sourcetype'] = $params['type'];
 		}
 		$template = $params['template'];
-	} else {
-		$template = isset($params['template']) ? $params['template'] : '';
 	}
 	$template = ak_replace('()', '"', $template);
 	$template = ak_replace('[lr]', $lr, $template);
@@ -986,7 +1048,7 @@ function operateparams($type, $params) {
 
 function order_operate($rule, $type = 'items') {
 	global $tablepre;
-	if(!in_array($type, array('items', 'categories', 'comments', 'attachments', 'texts', 'lists'))) {
+	if(!in_array($type, array('items', 'categories', 'comments', 'attachments', 'keywords', 'texts', 'lists'))) {
 		return '';
 	}
 	if(strpos($rule, 'random') !== false) return 'random';
@@ -996,10 +1058,6 @@ function order_operate($rule, $type = 'items') {
 		'orderby2' => 'orderby2',
 		'orderby3' => 'orderby3',
 		'orderby4' => 'orderby4',
-		'orderby5' => 'orderby5',
-		'orderby6' => 'orderby6',
-		'orderby7' => 'orderby7',
-		'orderby8' => 'orderby8',
 		'time' => 'dateline',
 		'update' => 'lastupdate',
 		'pv' => 'pageview',
@@ -1015,24 +1073,23 @@ function order_operate($rule, $type = 'items') {
 	);
 	$array_categories_field = array(
 		'orderby' => 'orderby',
-		'id' => 'id',
-		'items' => 'items'
-	);
-	$array_sections_field = array(
-		'orderby' => 'orderby',
 		'id' => 'id'
 	);
 	$array_comments_field = array(
 		'id' => 'id',
 		'time' => 'dateline',
 		'goodnum' => 'goodnum',
-		'badnum' => 'badnum',
-		'floor' => 'floor'
+		'badnum' => 'badnum'
 	);
 	$array_attachments_field = array(
 		'id' => 'id',
 		'itemid' => 'itemid',
 		'orderby' => 'orderby'
+	);
+	$array_keywords_field = array(
+		'count' => 'num',
+		'num' => 'num',
+		'searchcount' => 'searchcount'
 	);
 	$array_texts_field = array(
 		'page' => 'page',
@@ -1049,18 +1106,77 @@ function order_operate($rule, $type = 'items') {
 		if(!isset($array_temp[0]) || !array_key_exists($array_temp[0], $arrayname)) {
 			continue;
 		}
-		$return .= ',`'.str_replace('.', '`.`', $arrayname[$array_temp[0]]).'`';
-		if(isset($array_temp[1]) && $array_temp[1] == 'reverse') $return .= ' DESC';
+		if(isset($array_temp[1]) && $array_temp[1] == 'reverse') {
+			$return .= ','.$arrayname[$array_temp[0]].' DESC';
+		} else {
+			$return .= ','.$arrayname[$array_temp[0]];
+		}
 	}
-	$return = str_replace('`inid`', 'inid', $return);
-	$return = str_replace('`random`', 'random', $return);
 	return substr($return, 1);
 }
 
+function getindexs($params) {
+	global $exe_times, $thetime, $cache_memory, $ifdebug;
+	$starttime = akmicrotime();
+	$params = operateparams('index', $params);
+	$replaces = array(
+		'item' => $params['item'],
+		'category' => $params['category'],
+		'keywords' => $params['keywords']
+	);
+	foreach($params as $key => $value) {
+		if(substr($key, 0, 1) != '_') continue;
+		$replaces[$key] = $value;
+	}
+	if(empty($params['nohtml']) && !empty($GLOBALS['index_work'])) {
+		list($type, $id, $filenamebase) = explode("\n", $GLOBALS['index_work']);
+		$dirbase = $filenamebase;
+		if(substr($filenamebase, -1) != '/') {
+			$dirbase = dirname($filenamebase);
+		} else {
+			$dirbase = substr($filenamebase, 0, -1);
+		}
+		require_once(CORE_ROOT.'include/task.file.func.php');
+		for($i = 2; $i <= $params['last']; $i ++) {
+			$filename = calindexurl($params['baseurl'], $i, $replaces, $params['firstpage']);
+			$filename = $dirbase.'/'.$filename;
+			if($filename == $filenamebase) continue;
+			addtask('indextask'.$type, $id."\n".$filename."\n".$i);
+		}
+	}
+	if(empty($params['page'])) $params['page'] = 1;
+	$pre = $params['page'] - 1;
+	$next = min($params['last'], $params['page'] + 1);
+	$preurl = calindexurl($params['baseurl'], $pre, $replaces, $params['firstpage']);
+	$nexturl = calindexurl($params['baseurl'], $next, $replaces, $params['firstpage']);
+	$datas[0]['first'] = calindexurl($params['baseurl'], 1, $replaces, $params['firstpage']);
+	$datas[0]['pre'] = $preurl;
+	$datas[0]['next'] = $nexturl;
+	$datas[0]['last'] = calindexurl($params['baseurl'], $params['last'], $replaces);
+	$datas[0]['lastid'] = $params['last'];
+	$_indexs = '';
+	$_start = max($params['page'] - 3, 1);
+	if(empty($params['ipp'])) $params['ipp'] = 10;
+	$_end = min($_start + 9, ceil($params['total'] / $params['ipp']));
+	if($_end == 0) return $params['emptymessage'];
+	for($i = $_start; $i <= $_end; $i ++) {
+		$_url = calindexurl($params['baseurl'], $i, $replaces, $params['firstpage']);
+		if($params['page'] == $i) {
+			$_indexs .= str_replace('[link]', "<a class=\"current\">$i</a>", $params['linktemplate']);
+		} else {
+			$_indexs .= str_replace('[link]', "<a href=\"{$_url}\">$i</a>", $params['linktemplate']);
+		}
+	}
+	$datas[0]['indexs'] = $_indexs;
+	$datas[0]['total'] = $params['total'];
+	$html = renderdata($datas, $params);
+	return operatehtml($html, $params, $starttime);
+}
+
 function getpaging($params) {
+	global $exe_times, $thetime, $cache_memory, $ifdebug;
 	$starttime = akmicrotime();
 	$params = operateparams('paging', $params);
-	
 	$page = $params['page'];
 	$total = $params['total'];
 	if($params['maxpage'] <= $params['num']) {
@@ -1074,10 +1190,11 @@ function getpaging($params) {
 			$startid = 1;
 			$endid = $params['num'];
 		} elseif($endid > $params['maxpage']) {
-			$startid = $params['maxpage'] - $params['num'] + 1;
+			$startid = $params['maxpage'] - $params['num'];
 			$endid = $params['maxpage'];
 		}
 	}
+	$paging = '';
 	if(empty($params['nohtml']) && !empty($GLOBALS['index_work'])) {
 		list($type, $id, $filenamebase) = explode("\n", $GLOBALS['index_work']);
 		$dirbase = $filenamebase;
@@ -1086,73 +1203,49 @@ function getpaging($params) {
 		} else {
 			$dirbase = substr($filenamebase, 0, -1);
 		}
+		preg_match('/<a([^>]+)href=([\'"]?)([^>\'" ]+)([\' "]?)>/is', $params['template'], $match);
+		$baseurl = $match[3];
 		$replaces = array();
+		require_once(CORE_ROOT.'include/task.file.func.php');
 		for($i = 2; $i <= $params['maxpage']; $i ++) {
-			$baseurl = $params['baseurl'];
 			$filename = calindexurl($baseurl, $i, $replaces);
-			$filename = FORE_ROOT.$filename;
+			$filename = $dirbase.'/'.$filename;
 			if($filename == $filenamebase) continue;
-			addtask('createhtml_'.$type, "$id\t".$filename."\t".$i);
+			addtask('indextask'.$type, "$type\n$id\n".$filename."\n".$i);
 		}
 	}
-	$paging = '';
-	$currenturl = calindexurl($params['baseurl'], $page, array(), $params['firstpage']);
 	for($i = $startid; $i <= $endid; $i ++) {
-		$url = calindexurl($params['baseurl'], $i, array(), $params['firstpage']);
-		$url = calrelativeurl($currenturl, $url);
 		if($i != $page) {
 			$t = $params['template'];
 		} else {
 			$t = $params['currenttemplate'];
 		}
-		if($i == 1) {
-			if($page == 1 && !empty($params['currentfirstpagetemplate'])) {
-				$t = $params['currentfirstpagetemplate'];
-			} elseif($page > 1 && !empty($params['firstpagetemplate'])) {
-				$t = $params['firstpagetemplate'];
-			}
+		if($i == 1 && !empty($params['firstpagetemplate'])) {
+			$t = str_replace('[page]', $i, $params['firstpagetemplate']);
+		} else {
+			$t = str_replace('[page]', $i, $t);
 		}
-		$t = str_replace('[url]', $url, $t);
-		$t = str_replace('[page]', $i, $t);
 		$paging .= $t;
 	}
 	if($page <= 1) {
 		$previous = $params['noprevioustemplate'];
 		$first = $params['alreadyfirsttemplate'];
-		$previousid = 1;
 	} else {
 		$first = $params['firsttemplate'];
 		$previous = $params['previoustemplate'];
-		$previousid = $page - 1;
+		$previous = str_replace('[page]', $page - 1, $previous);
 	}
 	if($page >= $params['maxpage']) {
 		$next = $params['nonexttemplate'];
 		$last = $params['alreadylasttemplate'];
-		$nextid = $params['maxpage'];
 	} else {
 		$next = $params['nexttemplate'];
 		$last = $params['lasttemplate'];
-		$nextid = $page + 1;
+		$next = str_replace('[page]', $page + 1, $next);
+		$last = str_replace('[page]', $params['maxpage'], $last);
 	}
-	
-	$previousurl = calindexurl($params['baseurl'], $previousid, array(), $params['firstpage']);
-	$nexturl = calindexurl($params['baseurl'], $nextid, array(), $params['firstpage']);
-	$lasturl = calindexurl($params['baseurl'], $params['maxpage'], array(), $params['firstpage']);
-	$firsturl = calindexurl($params['baseurl'], 1, array(), $params['firstpage']);
-	
-	$previousurl = calrelativeurl($currenturl, $previousurl);
-	$nexturl = calrelativeurl($currenturl, $nexturl);
-	$lasturl = calrelativeurl($currenturl, $lasturl);
-	$firsturl = calrelativeurl($currenturl, $firsturl);
-	
-	
-	$previous = str_replace('[url]', $previousurl, $previous);
-	$next = str_replace('[url]', $nexturl, $next);
-	$last = str_replace('[url]', $lasturl, $last);
-	$first = str_replace('[url]', $firsturl, $first);
 	$datas = array();
 	$datas[0]['total'] = $total;
-	$datas[0]['totalpage'] = $params['maxpage'];
 	$datas[0]['paging'] = $paging;
 	$datas[0]['previous'] = $previous;
 	$datas[0]['next'] = $next;
@@ -1198,12 +1291,11 @@ function getcachedata($params) {
 
 function getcachefile($params) {
 	$key = ak_md5(serialize($params), 1);
-	$cachelayer = 2;
-	if(isset($params['cachelayer']) && a_is_int($params['cachelayer'])) $cachelayer = $params['cachelayer'];
-	return AK_ROOT.'cache/getdata/'.generatefilename($key, $cachelayer);
+	return AK_ROOT.'cache/'.$params['type'].'/'.$key;
 }
 
 function recursiontemplate($params, $data, $template = '') {
+	global $html_smarty;
 	if($template == '') $template = $params['template'];
 	$pos1 = strpos($template, '<#');
 	if($pos1 === false) return $template;
@@ -1211,7 +1303,7 @@ function recursiontemplate($params, $data, $template = '') {
 	$recursion = substr($template, $pos1 + 2, $pos2 - $pos1 - 2);
 	$fields = explode('(#)', $recursion);
 	$function = $fields[0];
-	if(templatefunctionexists($function)) {
+	if(isset($html_smarty->registered_plugins['function'][$function])) {
 		$recursionparams = array('return' => 1);
 		for($i = 1; $i < count($fields); $i ++) {
 			$_p1 = strpos($fields[$i], '=');
@@ -1245,11 +1337,5 @@ function recursiontemplate($params, $data, $template = '') {
 	$return = substr($template, 0, $pos1).$recursionreturn;
 	if(strlen($template) > $pos2 + 2) $return .= recursiontemplate($params, $data, substr($template, $pos2 + 2));
 	return $return;
-}
-
-function templatefunctionexists($function) {
-	global $tpl;
-	if($tpl->functionexists($function)) return true;
-	return false;
 }
 ?>

@@ -2,7 +2,7 @@
 if(!defined('CORE_ROOT')) exit;
 $sections = getcache('sections');
 function get_section_data($id) {
-	global $template_path, $db, $tablepre, $lan, $thetime, $system_root, $lr, $setting_homepage, $setting_defaultfilename, $setting_ifhtml, $sections, $setting_storemethod;
+	global $template_path, $smarty, $db, $tablepre, $lan, $thetime, $system_root, $lr, $header_charset, $setting_homepage, $setting_defaultfilename, $setting_ifhtml, $sections, $setting_storemethod, $html_smarty;
 	$variables = array();
 	$variables['_pagetype'] = 'section';
 	$variables['_pageid'] = $id;
@@ -26,6 +26,7 @@ function get_section_data($id) {
 	$variables['hometemplate'] = get_section_template($id);
 	$variables['pagetemplate'] = get_section_template($id, 'list');
 	$variables['sectionhomemethod'] = get_section_homemethod($id);
+	$variables['sectionpagemethod'] = get_section_pagemethod($id);
 	return $variables;
 }
 
@@ -39,7 +40,7 @@ function batchsectionhtml($ids) {
 		$filename = str_replace('[sectionid]', $variables['section'], $filename);
 		$variables['htmlfilename'] = FORE_ROOT.$filename;
 		$GLOBALS['index_work'] = "section\n".$id."\n".$variables['htmlfilename'];
-		render_template($variables['hometemplate'], $variables, 1);
+		render_template($variables, $variables['hometemplate'], 1);
 	}
 }
 
@@ -48,17 +49,19 @@ function batchsectionpagehtml($ids) {
 }
 
 function operatecreatesectionprocess() {
+	require_once(CORE_ROOT.'include/task.file.func.php');
 	unset($GLOBALS['index_work']);
-	$tasks = gettask('createhtml_section', 50);
+	$tasks = gettask('indextask', 50);
 	if(empty($tasks)) return true;
 	foreach($tasks as $task) {
-		list($id, $filename, $page) = explode("\t", $task);
+		list($type, $id, $filename, $page) = explode("\n", $task);
+		if($type != 'section') continue;
 		if(empty($sections[$id])) $sections[$id] = get_section_data($id);
 		$variables = $sections[$id];
 		$variables['page'] = $page;
 		$variables['htmlfilename'] = $filename;
 		$variables['template'] = $variables['pagetemplate'];
-		render_template($variables['template'], $variables, 1);
+		render_template($variables, '', 1);
 	}
 }
 
@@ -83,13 +86,12 @@ function get_section_homemethod($id) {
 	return $sectionhomemethod;
 }
 
-function getsectionurl($id) {
-	global $homepage;
-	if($id == 0) return '';
-	$section = get_section_data($id);
-	$url = $homepage.$section['sectionhomemethod'];
-	$url = str_replace('[id]', $id, $url);
-	$url = str_replace('[sectionalias]', $section['alias'], $url);
-	return $url;
+function get_section_pagemethod($id) {
+	global $setting_sectionpagemethod, $sections;
+	$sectionpagemethod = $sections[$id]['sectionpagemethod'];
+	if($sectionpagemethod == '') {
+		$sectionpagemethod = $setting_sectionpagemethod;
+	}
+	return $sectionpagemethod;
 }
 ?>

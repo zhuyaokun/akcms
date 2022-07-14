@@ -1,61 +1,5 @@
 <?php
 if(!defined('CORE_ROOT')) exit;
-
-function ifthemeuninstalled() {
-	global $settings;
-	if(!file_exists(AK_ROOT.'install/install.php')) return false;
-	if(file_exists(AK_ROOT.'configs/themeinstall.lock')) return false;
-	return true;
-}
-
-function themeinstalled() {
-	ak_rmdir(AK_ROOT.'install/configs');
-	ak_rmdir(AK_ROOT.'install/db');
-	ak_rmdir(AK_ROOT.'install/systemplates');
-	ak_rmdir(AK_ROOT.'install/templates');
-	ak_rmdir(AK_ROOT.'install/trunk');
-	akunlink(AK_ROOT.'install/custom.config.php');
-	akunlink(AK_ROOT.'install/install.php');
-	akunlink(AK_ROOT.'install/update.log');
-	touch(AK_ROOT.'configs/themeinstall.lock');
-}
-
-function ifinstalltemplate() {
-	global $get_installtemplate, $settings;
-	if(!empty($get_installtemplate)) return 1;
-	if(getcache('installtemplate')) return 0;
-	if(empty($settings['noinstalltemplate'])) return 1;
-	return 0;
-}
-
-function verifysiteid() {
-	global $setting_siteid;
-	if(strlen($setting_siteid) != 6) return false;
-	$string1 = substr($setting_siteid, 0, 2);
-	$string2 = substr($setting_siteid, 2, 2);
-	$publicip = publicip();
-	if($string1 != substr(md5($publicip), 0, 2)) return false;
-	if($string2 != substr(md5(AK_ROOT), 0, 2)) return false;
-	return true;
-}
-
-function resetsiteid() {
-	$siteid = generatesiteid();
-	setsetting('siteid', $siteid);
-	updatecache('settings');
-}
-
-function noinstalltemplate() {
-	global $db;
-	$db->replaceinto('settings', array('variable' => 'noinstalltemplate', 'value' => 1), 'variable');
-	updatecache('settings');
-}
-
-function rendersettinghtml($name, $title, $description, $value = '', $type = '', $standby = '') {
-	$input = renderinput($name, $type, $standby, $value);
-	return "<tr><td valign=\"top\"><b>{$title}</b><br>".htmlspecialchars($description)."</td><td valign=\"top\" width=\"300\">$input</td></tr>\n";
-}
-
 function checkcreator() {
 	global $lan, $admin_id;
 	if(iscreator($admin_id) != 1) adminmsg($lan['forcreatoronly'], '', 0, 1);
@@ -67,7 +11,7 @@ function ifallowtheme() {
 }
 
 function preparetheme() {
-	@akunlink(AK_ROOT.'configs/theme.lock');
+	@unlink(AK_ROOT.'configs/theme.lock');
 }
 function finishtheme() {
 	@ak_touch(AK_ROOT.'configs/theme.lock');
@@ -97,7 +41,7 @@ function go($url, $crumb = 1) {
 }
 
 function adminmsg($message, $url_forward = '', $timeout = 1, $flag = 0) {
-	global $header_charset;
+	global $smarty;
 	if($flag == 0) {
 		$flag = 'info';
 	} else {
@@ -110,13 +54,12 @@ function adminmsg($message, $url_forward = '', $timeout = 1, $flag = 0) {
 		if(strpos($url_forward, '?') === false) $and = '?';
 		if($url_forward != '') $url_forward .= $and.'r='.random(6);
 	}
-	$variable = array();
-	$variable['flag'] = $flag;
-	$variable['message'] = $message;
-	$variable['url_forward'] = $url_forward;
-	$variable['timeout'] = $timeout;
-	$variable['timeout_micro'] = $timeout * 1000;
-	displaytemplate('message.htm', $variable);
+	$smarty->assign('flag', $flag);
+	$smarty->assign('message', $message);
+	$smarty->assign('url_forward', $url_forward);
+	$smarty->assign('timeout', $timeout);
+	$smarty->assign('timeout_micro', $timeout * 1000);
+	displaytemplate('message.htm');
 	runinfo();
 	aexit();
 }
@@ -152,316 +95,6 @@ function get_select_templates() {
 	return $selecttemplates;
 }
 
-function managesetting($config) {
-	global $db, $lan, $currenturl, $vc;
-	$do = httpget('do');
-	$vs = array_keys($config['variables']);
-	$settings = array();
-	foreach($config['variables'] as $variable => $value) {
-		if($v = $db->get_by('*', 'settings', "variable='$variable'")) $settings[$variable] = $v;
-		$lan["s_$variable"] = $value;
-	}
-	if($do == '' || $do == 'setting') {
-		$html = inputshow($settings, $vs);
-		$params = array(
-			'name' => $config['name'],
-			'html' => $html,
-			'formaction' => $currenturl,
-			'return' => $config['return'],
-			'returnurl' => $config['returnurl']
-		);
-		displaytemplate('common_setting.htm', $params);
-	} elseif($do == 'savesetting') {
-		foreach($vs as $variable) {
-			if(!isset($settings[$variable]) || $_POST[$variable] != $settings[$variable]['value']) {
-				setsetting($variable, $_POST[$variable]);
-			}
-		}
-		adminmsg($lan['operatesuccess'], 'back');
-	}
-}
-
-function managedbtable($config) {
-	global $db, $lan, $currenturl, $vc;
-	$do = httpget('do');
-	$table = $config['table'];
-	$primary = $config['primary'];
-	
-	if($do == '' || $do == 'manage') {
-		if(!isset($config['pagenumsize'])) $config['pagenumsize'] = 15;
-		$page = 1;
-		if(isset($_GET['page'])) $page = $_GET['page'];
-		$where = '1';
-		if(isset($config['where'])) $where = $config['where'];
-		
-		$htmltop = "";
-		$fieldnum = count($config['fields']);
-		
-		$sort = 'id DESC';
-		if(isset($_GET['orderby'])) $sort = $db->addslashes($_GET['orderby']);
-
-		$sorthtml = '';
-		if(!empty($config['sorts'])) {
-			foreach($config['sorts'] as $key => $sortname) {
-				$sorthtml .= "<option value='$key'>$sortname</option>";
-			}
-			$sorthtml = $lan['orderby']."&nbsp;<select id='orderby' name='orderby'>$sorthtml</select>&nbsp;<script>$(document).ready(function(){\$('#orderby').val('$sort');});</script>";
-		}
-		if(empty($config['noadd']) || !empty($config['functionbutton'])) {
-			$htmltop .= "<div style='float:right;text-align:right;'>";
-			if(empty($config['noadd'])) $htmltop .= "&nbsp;<input type='button' value='{$lan['add']}' onclick='location=\"$currenturl&do=add\"' />";
-			if(!empty($config['functionbutton'])) {
-				foreach($config['functionbutton'] as $text => $url) {
-					$htmltop .= "&nbsp;<input type='button' value='{$text}' onclick='location=\"$url\"' />";
-				}
-			}
-			$htmltop .= "</div>";
-		}
-		if(!empty($config['filters'])) {
-			foreach($config['filters'] as $filter => $value) {
-				if(empty($value['size'])) $value['size'] = '120px';
-				$_v = isset($_GET[$filter]) ? $_GET[$filter] : '';
-				$htmltop .= $value['name']."&nbsp;<input type='text' style='width:{$value['size']}' name='{$filter}' value='".htmlspecialchars($_v)."' />&nbsp;";
-				if($_v == '') continue;
-				if($value['type'] == 'equal') {
-					$where .= " AND {$filter}='".$db->addslashes($_GET[$filter])."'";
-				} elseif($value['type'] == 'like') {
-					$where .= " AND {$filter} LIKE '%".$db->addslashes($_GET[$filter])."%'";
-				}
-			}
-			$htmltop .= "$sorthtml<input type='submit' value='{$lan['query']}' />";
-			if(isset($_GET['file'])) $htmltop .= "<input type='hidden' name='file' value='{$_GET['file']}' />";
-			if(isset($_GET['action'])) $htmltop .= "<input type='hidden' name='action' value='{$_GET['action']}' />";
-			if(isset($_GET['app'])) $htmltop .= "<input type='hidden' name='app' value='{$_GET['app']}' />";
-			$htmltop .= "</form>";
-			
-			
-		}
-		if($htmltop != "") {
-			$htmltop = "<table width='100%' border='0' align='center' cellpadding='4' cellspacing='1' class='commontable'><tr class='header'><td colspan=''><div class='righttop'></div>{$lan['manage']}{$config['name']}</td></tr><tr><td><form action='index.php'>$htmltop</td></tr></table>";
-		}
-
-		$sql = "SELECT COUNT(*) as c FROM $table WHERE {$where}";
-		$count = $db->get_one($sql);
-		
-		$start = ($page - 1) * $config['pagenumsize'];
-		$sql = "SELECT * FROM $table WHERE {$where} ORDER BY $sort LIMIT $start,{$config['pagenumsize']}";
-		
-		$str_index = multi($count['c'], $config['pagenumsize'], $page, $currenturl);
-		$query = $db->query($sql);
-
-		$table = '<table width="100%" border="0" align="center" cellpadding="4" cellspacing="1" class="commontable"><tr class="header">';
-		foreach($config['fields'] as $field => $name) {
-			if(is_array($name)) $name = $name['name'];
-			$table .= "<td>{$name}</td>";
-		}
-		if(!empty($config['operates'])) $table .= "<td>&nbsp;</td>";
-		$table .= "</tr>";
-		$rows = array();
-		while($row = $db->fetch_array($query)) {
-			if(!empty($config['itemexteval'])) {
-				$ext = eval($config['itemexteval']);
-				$row += $ext;
-			}
-			$rows[] = $row;
-		}
-		foreach($rows as $row) {
-			$tr = '<tr>';
-			foreach($config['fields'] as $field => $_v) {
-				$value = '';
-				if(isset($row[$field])) $value = $row[$field];
-				if(!is_array($_v)) {
-					$tr .= "<td>{$value}</td>";
-				} elseif(!empty($_v['function']) && function_exists($_v['function'])) {
-					$_function = $_v['function'];
-					$value = $_function($value, $row);
-					$tr .= "<td>{$value}</td>";
-				} elseif(isset($_v['eval'])) {
-					$_e = $_v['eval'];
-					$_e = str_replace('[value]', $value, $_e);
-					$result = eval($_e);
-					$tr .= "<td>$result</td>";
-				} elseif(isset($_v['url'])) {
-					$url = $_v['url'];
-					$url = str_replace('[id]', $row['id'], $url);
-					$url = str_replace('[vc]', $vc, $url);
-					$url = mergeurl($url, $currenturl);
-					$_h = isset($_v['template']) ? $_v['template'] : '<a href="[url]">[value]</a>';
-					$_h = str_replace('[url]', $url, $_h);
-					$_h = str_replace('[value]', $value, $_h);
-					$tr .= "<td>$_h</td>";
-				} elseif(isset($_v['template'])) {
-					$_h = $_v['template'];
-					$_h = str_replace('[value]', $value, $_h);
-					$tr .= "<td>$_h</td>";
-				} else {
-					$tr .= "<td>{$value}</td>";
-				}
-			}
-			if(!empty($config['operates'])) {
-				$operatehtml = '';
-				foreach($config['operates'] as $operate => $url) {
-					$url = str_replace('[id]', $row['id'], $url);
-					$url = str_replace('[vc]', $vc, $url);
-					if(substr($url, -1) == '@') {
-						$url = substr($url, 0, -1);
-						$url = mergeurl($url, $currenturl);
-						$operatehtml .= "<a href='javascript:popup(\"{$url}\")'>{$operate}</a>&nbsp;";
-					} else {
-						$url = mergeurl($url, $currenturl);
-						$operatehtml .= "<a href='{$url}'>{$operate}</a>&nbsp;";
-					}
-				}
-				$tr .= "<td>$operatehtml</td>";
-			}
-			$tr .= "</tr>";
-			$table .= $tr;
-		}
-		if(!isset($tr)) $table .= "<tr><td colspan='".($fieldnum + 1)."'>{$lan['item_no']}</td></tr>";
-		$table .= "<tr class='header'><td colspan='".($fieldnum + 1)."'>$str_index</td></tr>";
-		$table .= "</table>";
-		displaytemplate('admincp_managetable.htm', array("table" => $table, 'htmlfilter' => $htmltop));
-	} elseif($do == 'add') {
-		if(!empty($config['noadd'])) aexit('error');
-		if(empty($_POST)) {
-			$table = '<table width="500" border="0" align="center" cellpadding="4" cellspacing="1" class="commontable"><tr class="header"><td colspan="2"><div class="righttop"><a href="'.$currenturl.'&do=manage">'.$lan['manage'].$config['name'].'&nbsp;&gt;&gt;</a></div>'.$lan['add'].$config['name'].'</td></tr>';
-			if(!empty($config['addfields'])) {
-				foreach($config['addfields'] as $key => $field) {
-					$name = isset($field['name']) ? $field['name'] : $key;
-					isset($field['style']) ? $style = $field['style'] : $style = '';
-					isset($field['standby']) ? $standby = $field['standby'] : $standby = '';
-					isset($field['value']) ? $value = $field['value'] : $value = '';
-					$input = renderinput($key, $field['type'], $standby, $value, $style);
-					$tr = "<tr><td width='100' valign='top'>$name</td><td>$input";
-					if(isset($field['ext'])) $tr .= $field['ext'];
-					$tr .= "</td></tr>";
-					$table .= $tr;
-				}
-			}
-			$table .= "<tr><td colspan='2'><input type='checkbox' name='continueadd' id='continueadd' value='1' /><label for='continueadd'>{$lan['continueadd']}</label></td></tr>";
-			$table .= "</table>";
-			if(akgetcookie('continueadd')) $table .= "<script>$(document).ready(function(){\$('#continueadd').attr('checked', true);});</script>";
-			displaytemplate('admincp_managetable_add.htm', array("table" => $table, 'formaction' => $currenturl));
-		} else {
-			$value = $_POST;
-			if(isset($config['addsavefunction'])) {
-				$addsavefunction = $config['addsavefunction'];
-				if(function_exists($addsavefunction)) {
-					$value = $addsavefunction($value);
-					if(is_string($value)) {
-						adminmsg($value, $currenturl.'&do=manage', 3, 1);
-					}
-				}
-			}
-			foreach($value as $_k => $_v) {
-				if(!in_array($_k, $config['savefields'])) unset($value[$_k]);
-				if(is_array($_v)) $value[$_k] = implode(',', $_v);
-			}
-			if(empty($value)) aexit('no field.');
-			$db->insert($table, $value);
-			if(isset($config['addsavedfunction'])) {
-				$addsavedfunction = $config['addsavedfunction'];
-				if(function_exists($addsavedfunction)) {
-					$value = $addsavedfunction($value);
-					if(is_string($value)) {
-						adminmsg($value, $currenturl.'&do=manage', 3, 1);
-					}
-				}
-			}
-			if(empty($_POST['continueadd'])) {
-				aksetcookie('continueadd', 0);
-			} else {
-				aksetcookie('continueadd', 1);
-				aklocation($currenturl);
-			}
-			adminmsg($lan['operatesuccess'], $currenturl.'&do=manage');
-		}
-	} elseif($do == 'edit') {
-		if(empty($_POST)) {
-			$row = $db->get_by('*', $table, "`$primary`='".$db->addslashes($_GET[$primary])."'");
-			if(isset($config['editfunction'])) {
-				$editfunction = $config['editfunction'];
-				if(function_exists($editfunction)) $row = $editfunction($row);
-			}
-			$table = '<table width="500" border="0" align="center" cellpadding="4" cellspacing="1" class="commontable"><tr class="header"><td colspan="2"><div class="righttop"><a href="'.$currenturl.'&do=manage">'.$lan['manage'].$config['name'].'&nbsp;&gt;&gt;</a></div>'.$lan['edit'].$config['name'].'</td></tr>';
-			if(isset($_GET['ext']) && isset($config['extedits'][$_GET['ext']])) {
-				$editfields = $config['extedits'][$_GET['ext']]['fields'];
-			} else {
-				$editfields = $config['addfields'];
-				if(!empty($config['editfields'])) $editfields = $config['editfields'];
-			}
-			if(!empty($editfields)) {
-				foreach($editfields as $key => $field) {
-					$name = isset($field['name']) ? $field['name'] : $key;
-					isset($field['style']) ? $style = $field['style'] : $style = '';
-					isset($field['standby']) ? $standby = $field['standby'] : $standby = '';
-					$input = renderinput($key, $field['type'], $standby, $row[$key], $style);
-					$tr = "<tr><td width='100' valign='top'>$name</td><td>$input";
-					if(isset($field['ext'])) $tr .= $field['ext'];
-					$tr .= "</td></tr>";
-					$table .= $tr;
-				}
-			}
-			$table .= "</table>";
-			displaytemplate('admincp_managetable_edit.htm', array("table" => $table, 'formaction' => $currenturl));
-		} else {
-			$value = $_POST;
-			$row = $db->get_by('*', $table, "`$primary`='".$db->addslashes($_GET[$primary])."'");
-			
-			foreach($value as $_k => $_v) {
-				if(isset($config['savefields']) && !in_array($_k, $config['savefields'])) unset($value[$_k]);
-				if(is_array($_v)) $value[$_k] = implode(',', $_v);
-			}
-			
-			if(isset($_GET['ext']) && isset($config['extedits'][$_GET['ext']])) {
-				if(isset($config['extedits'][$_GET['ext']]['savefunction'])) $savefunction = $config['extedits'][$_GET['ext']]['savefunction'];
-			} else {
-				if(isset($config['editsavefunction'])) $savefunction = $config['editsavefunction'];
-			}
-			if(isset($savefunction) && function_exists($savefunction)) {
-				$value = $savefunction($row, $value);
-				if(is_string($value)) {
-					adminmsg($value, $currenturl.'&do=manage', 3, 1);
-				}
-			}
-			$db->update($table, $value, "`$primary`='".$db->addslashes($_GET[$primary])."'");
-			adminmsg($lan['operatesuccess'], $currenturl.'&do=manage');
-		}
-	} elseif($do == 'delete') {
-		vc();
-		$db->delete($table, "`$primary`='".$db->addslashes($_GET[$primary])."'");
-		adminmsg($lan['operatesuccess'], 'back');
-	}
-}
-
-function inputshow($settings, $variable) {
-	global $lan, $db;
-	$output = '';
-	foreach($variable as $v) {
-		if(!isset($settings[$v])) {
-			$db->insert('settings', array('variable' => $v, 'value' => ''));
-			$settings[$v]['value'] = '';
-		}
-		$_f = explode('|', $lan['s_'.$v]);
-		list($title, $description, $standby) = $_f;
-		$type = 'string';
-		if(isset($_f[3])) $type = $_f[3];
-		$setting = $settings[$v];
-		$input = renderinput($v, $type, $standby, $setting['value']);
-		$output .= "<tr><td valign='top'><b>{$title}</b><br>{$description}</td><td valign=\"top\" width=\"300\">{$input}</td></tr>\n";
-	}
-	return $output;
-}
-
-function checkcategorypath($path, $up = 0) {
-	global $lan, $system_root, $db, $tablepre;
-	if(!empty($path)) {
-		if(!preg_match('/^[_0-9a-zA-Z\-_]*$/i', $path)) return $lan['pathspecialcharacter'];
-		if($db->get_by('id', 'categories', "categoryup='$up' AND path='$path'")) return $lan['categorypathused'];
-	}
-	return '';
-}
-
 function multi($count, $perpage, $page, $url) {
 	global $lan;
 	$num = ceil($count / $perpage);
@@ -479,6 +112,104 @@ function multi($count, $perpage, $page, $url) {
 	return $str_index;
 }
 
+function inputshow($settings, $variable) {
+	global $lan, $db;
+	$output = '';
+	$cs = array();
+	$cs['ifhtml']['type'] = 'radio';
+	$cs['usefilename']['type'] = 'radio';
+	$cs['commentneedcaptcha']['type'] = 'radio';
+	$cs['forbidstat']['type'] = 'radio';
+	$cs['ifuser']['type'] = 'radio';
+	$cs['ifcomment']['type'] = 'radio';
+	$cs['ifguestcomment']['type'] = 'radio';
+	$cs['ifcommentrehtml']['type'] = 'radio';
+	$cs['language']['type'] = 'radio';
+	$cs['attachimagequality']['type'] = 'radio';
+	$cs['attachwatermarkposition']['type'] = 'radio';
+	$cs['ifdraft']['type'] = 'radio';
+	$cs['cdn']['type'] = 'string';
+	$cs['cdnid']['type'] = 'string';
+	$cs['cdnsecret']['type'] = 'string';
+	$cs['cdnpath']['type'] = 'string';
+	$cs['maxattachsize']['type'] = 'int';
+	$cs['template2']['type'] = 'template';
+	$cs['template3']['type'] = 'template';
+	$cs['template4']['type'] = 'template';
+	$cs['pagetemplate']['type'] = 'template';
+	$cs['tksecrets']['type'] = 'text';
+	foreach($variable as $v) {
+		if(!isset($settings[$v])) {
+			$db->insert('settings', array('variable' => $v, 'value' => ''));
+			$settings[$v]['value'] = '';
+		}
+		list($title, $description, $standby) = explode('|', $lan['s_'.$v]);
+		if(empty($cs[$v]['type'])) $cs[$v]['type'] = 'string';
+		$setting = $settings[$v];
+		$input = renderinput($v, $cs[$v]['type'], $standby, $setting['value']);
+		$output .= "<tr><td valign='top'><b>{$title}</b><br>{$description}</td><td valign=\"top\" width=\"300\">{$input}</td></tr>\n";
+	}
+	return $output;
+}
+
+function renderinput($name, $type = 'string', $standby = '', $value = '') {
+	global $lan;
+	$input = '';
+	if($type == 'string') {
+		$input = '<input type="text" name="'.$name.'" value="'.ak_htmlspecialchars($value).'" style="width:100%;">';
+	} elseif($type == 'int') {
+		$input = '<input type="text" name="'.$name.'" value="'.ak_htmlspecialchars($value).'" size="15">';
+	} elseif($type == 'pass') {
+		$input = '<input type="password" name="'.$name.'" value="'.$value.'" size="50">';
+	} elseif($type == 'radio' || $type == 'checkbox') {
+		$tag = $type;
+		$options = explode(';', $standby);
+		foreach($options as $option) {
+			$checked = '';
+			if(strpos($option, ',') === false) {
+				$_text = $_value = $option;
+			} else {
+				list($_text, $_value) = explode(',', $option);
+			}
+			$key = md5($_value);
+			$values = explode(',', $value);
+			if(in_array($_value, $values)) $checked = ' checked';
+			$input .= "<input type='$type' name='{$name}[]' id='{$name}_{$key}' value='$_value'$checked>&nbsp;<label for='{$name}_{$key}'>$_text</label>&nbsp;";
+		}
+	} elseif($type == 'text') {
+		$input = "<textarea name='$name' style='width:500px;height:100px;'>$value</textarea>";
+	} elseif($type == 'richtext') {
+		$input = "<textarea name='$name' style='width:600px;height:200px;' class=\"xheditor {hoverExecDelay:-1,upImgExt:'jpg,jpeg,gif,png',tools:'Source,Pastetext,|,Blocktag,Fontface,FontSize,Bold,Italic,Underline,Strikethrough,FontColor,BackColor,SelectAll,Removeformat,|,Align,List,Outdent,Indent,|,Link,Unlink,Anchor,Img,Hr,Table',loadCSS:'<style>body{font-size:14px;}</style>'}\">$value</textarea>";
+	} elseif($type == 'category') {
+		$input = "<select id='$name' name='{$name}'>".get_select('category').'</select><script>$(document).ready(function(){$("#'.$name.'").val('.$value.');});</script>';
+	} elseif($type == 'categories') {
+		$input = "<select id='$name' name='{$name}[]' multiple>".get_select('category');
+		if(strpos($value,',') === false) $value = "'".$value."'";
+		$input .= "</select><script>function ifchecked{$name}(obj) {ids = new Array($value);for(i=0;i<ids.length;i++){if(ids[i]==obj.val()){obj.attr('selected','selected');}}}$('#{$name}').children().each(function(){ifchecked{$name}(\$(this));});</script>";
+	} elseif($type == 'section') {
+		$input = "<select id='$name' name='{$name}'>".get_select('section').'</select><script>$(document).ready(function(){$("#$name").val($value);});</script>';
+	} elseif($type == 'template') {
+		$input = "<select id='$name' name='{$name}'><option value=''>{$lan['pleasechoose']}</option>".get_select_templates().'</select><script>$(document).ready(function(){$("#'.$name.'").val("'.$value.'");});</script>';
+	} elseif($type == 'picture') {
+		$input = "<table><tr><td>{$lan['pictureurl']}:<input type='text' name='{$name}' value='{$value}' size='50'>";
+		if(!empty($value)) {
+			$value = pictureurl($value);
+			$input .= " <a href='$value' target='_blank'>{$lan['preview']}</a>";
+		}
+		$input .= "</td></tr><tr><td>{$lan['or']}</td></tr><tr><td>{$lan['uploadpicture']}:<input type='file' name='{$name}_upload' value=''></td></tr></table>";
+	}
+	return $input."\n";
+}
+
+function checkcategorypath($path, $up = 0) {
+	global $lan, $system_root, $db, $tablepre;
+	if(!empty($path)) {
+		if(!preg_match('/^[_0-9a-zA-Z\-_]*$/i', $path)) return $lan['pathspecialcharacter'];
+		if($db->get_by('id', 'categories', "categoryup='$up' AND path='$path'")) return $lan['categorypathused'];
+	}
+	return '';
+}
+
 function runinfo($message = '') {
 	global $db, $ifdebug, $sysname, $sysedition, $mtime, $systemurl;
 	$str_debug = $message;
@@ -486,7 +217,7 @@ function runinfo($message = '') {
 	$exetime = number_format($endmtime[1] + $endmtime[0] - $mtime[1] - $mtime[0], 3);
 	if(isset($db)) {
 		if(empty($ifdebug)) {
-			$str_debug .= "<div style='margin-top:10px;text-align:center;' class='mininum'>".$db->querynum.'&nbsp;queries&nbsp;Time:'.$exetime.'</div>';
+			$str_debug .= "<center><div style='margin-top: 10px;' class='mininum'>".$db->querynum.'&nbsp;queries&nbsp;Time:'.$exetime.'</div>';
 		} else {
 			$str_debug .= "<center><div style='margin-top: 10px;' class='mininum' onclick='show_query_debug()'>".$db->querynum.'&nbsp;queries&nbsp;Time:'.$exetime;
 			if($memused = ak_memused()) {
@@ -501,7 +232,12 @@ function runinfo($message = '') {
 			$str_debug .= "</div></center>\n";
 			$js = "<script language='javascript'>\n";
 			$js .= "function show_query_debug() {\n";
-			$js .= "$('#query_debug').toggle();\n";
+			$js .= "var debug = document.getElementById('query_debug');\n";
+			$js .= "if(debug.style.display == 'block') {\n";
+			$js .= "	debug.style.display = 'none';\n";
+			$js .= "} else {\n";
+			$js .= "	debug.style.display = 'block';\n";
+			$js .= "}\n";
 			$js .= "}\n";
 			$js .= "</script>\n";
 			$str_debug .= $js;
@@ -512,23 +248,14 @@ function runinfo($message = '') {
 	echo($str_debug);
 }
 
-function createfore($foretype = '') {
-	global $system_root, $settings;
+function createfore() {
+	global $system_root;
 	$config_data = "<?php\n$"."system_root = '{$system_root}';\n$"."foreload = 1;\n?>";
 	writetofile($config_data, FORE_ROOT.'akcms_config.php');
-	$files = array('attachment', 'category', 'inc', 'include', 'comment', 'item', 'page', 'rounter', 'score', 'section', 'app');
+	$files = array('attachment', 'captcha', 'category', 'comment', 'inc', 'include', 'item', 'keyword', 'page', 'post', 'rounter', 'score', 'section', 'user');
 	foreach($files as $file) {
-		if(!empty($foretype) && $foretype != $file) continue;
 		$content = "<?php include 'akcms_config.php';\$file = '{$file}';include \$system_root.'/fore.php';?>";
 		writetofile($content, FORE_ROOT.'akcms_'.$file.'.php');
-	}
-}
-
-function removefore($foretype = '') {
-	$foretypes = array('attachment', 'category', 'inc', 'include', 'comment', 'item', 'page', 'rounter', 'score', 'section', 'app', 'keyword');
-	foreach($foretypes as $f) {
-		if(empty($foretype)) @akunlink(FORE_ROOT.'akcms_'.$f.'.php');
-		if(!empty($foretype) && $foretype == $f) @akunlink(FORE_ROOT.'akcms_'.$f.'.php');
 	}
 }
 
@@ -544,15 +271,9 @@ function updateitemfilename($ids) {
 	$query = $db->query("SELECT * FROM {$tablepre}_items WHERE id IN ($_ids)");
 	$ccs = array();
 	while($item = $db->fetch_array($query)) {
-		if(isset($ccs[$item['category']])) {
-			$cc = $ccs[$item['category']];
-		} else {
-			$cc = getcategorycache($item['category']);
-			$ccs[$item['category']] = $cc;
-		}
+		if(isset($ccs[$item['category']])) $cc = $ccs[$item['category']];
 		$filename = itemhtmlname($item['id'], 1, $item, $cc);
-		$sql = "UPDATE {$tablepre}_filenames SET filename='$filename' WHERE id={$item['id']}";
-		$db->query($sql);
+		$sql = "UPDATE {$tablepre}_filenames SET filename='$filename' WHERE item['id']";
 	}
 }
 
@@ -595,9 +316,20 @@ function extfieldinput($field) {
 
 function rendermodulefield($key, $data, $value = false) {
 	global $lan;
-	$alias = fieldname($key, $data);
+	if(!empty($data['alias'])) {
+		$alias = $data['alias'];
+	} elseif(substr($key, 0, 7) == 'orderby') {
+		$alias = $lan['order'].substr($key, 7);
+	} elseif(isset($lan[$key])) {
+		$alias = $lan[$key];
+	} elseif($key == 'dateline') {
+		$alias = $lan['time'];
+	} else {
+		if(empty($extfields)) $extfields = getcache('extfields');
+		$alias = $extfields[$key]['name'];
+	}
 	if($key == 'dateline' && !empty($value)) $value = date('Y-m-d H:i:s', $value);
-	$htmlfields = "<tr><td width='60' valign='top'>{$alias}</td>";
+	$htmlfields = "<tr><td width='50' valign='top'>{$alias}</td>";
 	if(!empty($data['size'])) {
 		if(strpos($data['size'], ',') === false) {
 			$width = $data['size'];
@@ -605,7 +337,7 @@ function rendermodulefield($key, $data, $value = false) {
 			list($width, $height) = explode(',', $data['size']);
 		}
 	}
-	if($key == 'data' || $key == 'digest' || strpos($key, 'string') === 0 || (isset($data['type']) && $data['type'] == 'rich')) {
+	if($key == 'data' || $key == 'digest' || (isset($data['type']) && $data['type'] == 'rich')) {
 		if(empty($width)) $width = '100%';
 		if(empty($height)) $height = '400';
 	}
@@ -616,7 +348,7 @@ function rendermodulefield($key, $data, $value = false) {
 			$value = br2nl($value);
 			$htmlfields .= "<td><textarea name='{$key}' style='width:{$width};height:{$height};'>".ak_htmlspecialchars($value)."</textarea>";
 		} elseif($data['type'] == 'rich') {
-			$htmlfields .= "<td>".editor($key, 'rich', $value, array('uploadimgurl' => 'index.php?file=upload&id=[itemid]'));
+			$htmlfields .= "<td><textarea name='{$key}' id='{$key}' style='width:{$width};height:{$height};' class=\"xheditor {hoverExecDelay:-1,upImgUrl:'index.php?file=upload&id=[itemid]',upImgExt:'jpg,jpeg,gif,png',tools:'Source,Pastetext,|,Blocktag,Fontface,FontSize,Bold,Italic,Underline,Strikethrough,FontColor,BackColor,SelectAll,Removeformat,|,Align,List,Outdent,Indent,|,Link,Unlink,Anchor,Img,Hr,Table',loadCSS:'<style>body{font-size:14px;}</style>'}\">".ak_htmlspecialchars($value)."</textarea>";
 			$htmlfields .= "<input type='checkbox' value='1' name='{$key}_copypic' id='{$key}_copypic'><label for='{$key}_copypic'>".$lan['copypicturetolocal'].'</label>';
 			$htmlfields .= "<br /><input type='checkbox' value='1' name='{$key}_pickpicture' id='{$key}_pickpicture'><label for='{$key}_pickpicture'>".$lan['pickpicture'].'</label>';
 		} else {
@@ -628,11 +360,11 @@ function rendermodulefield($key, $data, $value = false) {
 		if($picture != '') $htmlfields .= "<a href='$picture' target='_blank'>{$lan['preview']}</a>";
 		$htmlfields .= "</td></tr><tr><td>{$lan['or']}</td></tr><tr><td>{$lan['uploadpicture']}:<input type='file' name='uploadpicture' value=''></td></tr></table>";
 	} elseif($key == 'attach') {
-		$htmlfields .= "<td>";
-		$htmlfields .= "{$lan['upload']}&nbsp;:&nbsp;<input style='width:130px;' id='multiple' type='file' multiple /><span id='upinfo'></span>";
-		$htmlfields .= "<div id='attachments'></div></td>";
+		$htmlfields .= "<div style='display:none'><div id='firstattach'>{$lan['attach']}<input type='file' name='attach[]' value='' /><br />{$lan['description']}({$lan['limit255']})<br /><textarea name='description[]' cols='60' rows='3'></textarea><br /></div></div><script>function addattach() {adddiv = $('#firstattach').html();$(adddiv).appendTo('#otherattach');}</script><td>";
+		if($value > 0) $htmlfields .= "<iframe id='attachments' onload='Javascript:SetframeHeight(\"attachments\")' src='index.php?file=admincp&action=attachments&id=[itemid]&r=".random(6)."' frameborder='0' style='overflow-x:hidden;overflow-y:hidden;margin:0px auto;width:100%;margin-bottom:8px;'></iframe>";
+		$htmlfields .= "<div id='otherattach'></div><input type='button' value='{$lan['add']}{$lan['space']}{$lan['attach']}' onclick='addattach()'><script>addattach();</script>";
 	} elseif($key == 'paging') {
-		$htmlfields .= "<td><div id='paging'></div>";
+		$htmlfields .= "<td><iframe id='paging' onload='Javascript:SetframeHeight(\"paging\")' src='index.php?file=admincp&action=paging&id={$value}&type={$data['type']}&r=".random(6)."' frameborder='0' style='overflow-x:hidden;overflow-y:hidden;margin:0px auto;width:100%;'></iframe>";
 	} elseif($key == 'title') {
 		$width = empty($data['size']) ? '240' : $data['size'];
 		if(substr($width, -1) != '%') $width .= 'px';
@@ -652,8 +384,8 @@ function rendermodulefield($key, $data, $value = false) {
 				}
 			}
 			$htmlfields .= "</select>&nbsp;<select id='titlestyle' name='titlestyle'><option value=''>{$lan['style']}</option><option value='b'>{$lan['bold']}</option><option value='i'>{$lan['italic']}</option></select>";
+			if(!empty($value)) $htmlfields .= "&nbsp;<input type='button' style='background:red;color:#FFF' value='{$lan['delete']}' onclick='return confirmdelete();'>";
 		}
-		if(!empty($value)) $htmlfields .= "&nbsp;<input type='button' style='background:red;color:#FFF' value='{$lan['delete']}' onclick='return confirmdelete();'>";
 	} else {
 		if(strpos($data['default'], ';') === false) {
 			$width = empty($data['size']) ? '240' : $data['size'];
@@ -706,7 +438,7 @@ function ifitemtemplateexist($category, $template = '') {
 function table_start($title = '', $colspan = 10) {
 	global $lan;
 	return "<table cellpadding=\"4\" cellspacing=\"1\" class=\"commontable width100\"><tr class=\"header\">\n".
-	"<td colspan=\"{$colspan}\"><div class=\"righttop\">".h('setting:help')."</div>{$title}</td>\n".
+	"<td colspan=\"{$colspan}\"><div class=\"righttop\"><a href=\"".h('setting')."\" target=\"_blank\">{$lan['help']}</a></div>{$title}</td>\n".
 	"</tr>";
 }
 
@@ -725,22 +457,23 @@ function modulefields($data = array()) {
 	$fieldshtml = '';
 	$trid = 0;
 	foreach($itemfields as $field) {
-		if(a_is_int(substr($field, -1))) {
-			$_k = substr($field, 0, -1);
-			$l = str_replace($_k, $lan[$_k], $field);
+		if(strpos($field, 'orderby') !== false) {
+			$l = str_replace('orderby', $lan['order'], $field);
 		} elseif($field == 'dateline') {
 			$l = $lan['time'];
 		} else {
 			$l = isset($lan[$field]) ? $lan[$field] : $field;
 		}
 		$setting = '';
-		if($field == 'data' || $field == 'digest' || $field == 'paging' || strpos($field, 'string') === 0) {
+		if($field == 'data' || $field == 'digest' || $field == 'paging') {
 			$setting = "<select name='{$field}_type' id='{$field}_type'>".returnmodulefieldtype()."</select>";
 			if(!empty($data[$field]['type'])) $setting .= "<script>$('#{$field}_type option[value={$data[$field]['type']}]').attr('selected',true);</script>";
 		}
 		if($field == 'title') {
 			$setting .= "<input type='checkbox' name='iftitlestyle' id='iftitlestyle' value='1'><label for='iftitlestyle'>{$lan['style']}</label>";
+			$setting .= "<input type='checkbox' name='ifinitial' id='ifinitial' value='1'><label for='ifinitial'>{$lan['initial']}</label>";
 			if(!empty($data['title']['iftitlestyle'])) $setting .= "<script>$('#iftitlestyle').attr('checked', true); </script>";
+			if(!empty($data['title']['ifinitial'])) $setting .= "<script>$('#ifinitial').attr('checked', true); </script>";
 		}
 		$_alias = isset($data[$field]['alias']) ? $data[$field]['alias'] : '';
 		$_order = isset($data[$field]['order']) ? $data[$field]['order'] : '';
@@ -810,7 +543,7 @@ function renderitemfield($moduleid, $itemvalue = array()) {
 		$_category = each($modules[$moduleid]['categories']);
 		$categoryfield = "<input type='hidden' name='category' value='{$_category[0]}'>";
 	} elseif(empty($GLOBALS['nocategoryselect'])) {
-		$categoryfield = "<tr><td>{$categoryalias}</td>".'<td class="categoryselect"><select id="category0" onchange="javascript:selectcategory(1, this.value)"></select><select id="category1" onchange="javascript:selectcategory(2, this.value)"></select><select id="category2" onchange="javascript:selectcategory(3, this.value)"></select><select id="category3" onchange="javascript:selectcategory(4, this.value)"></select><select id="category4" onchange="javascript:selectcategory(5, this.value)"></select><select id="category5" onchange="javascript:selectcategory(6, this.value)"></select><select id="category6" onchange="javascript:selectcategory(7, this.value)"></select><select id="category7" onchange="javascript:selectcategory(8, this.value)"></select><select id="category8" onchange="javascript:selectcategory(9, this.value)"></select><select id="category9" onchange="javascript:selectcategory(10, this.value)"></select><input type="hidden" id="category" name="category"><script language="javascript">$(document).ready(function(){selectcategory(0, 0);});</script></td></tr>';
+		$categoryfield = "<tr><td width=120>{$categoryalias}</td>".'<td class="categoryselect"><select id="category0" onchange="javascript:selectcategory(1, this.value)"></select><select id="category1" onchange="javascript:selectcategory(2, this.value)"></select><select id="category2" onchange="javascript:selectcategory(3, this.value)"></select><select id="category3" onchange="javascript:selectcategory(4, this.value)"></select><select id="category4" onchange="javascript:selectcategory(5, this.value)"></select><select id="category5" onchange="javascript:selectcategory(6, this.value)"></select><select id="category6" onchange="javascript:selectcategory(7, this.value)"></select><select id="category7" onchange="javascript:selectcategory(8, this.value)"></select><select id="category8" onchange="javascript:selectcategory(9, this.value)"></select><select id="category9" onchange="javascript:selectcategory(10, this.value)"></select><input type="hidden" id="category" name="category"><script language="javascript">$(document).ready(function(){selectcategory(0, 0);});</script></td></tr>';
 	} else {
 		$categoryfield = "<tr><td>{$categoryalias}</td><td><input name='category' size='6' id='category' class='mustoffer' /></td></tr>";
 	}
@@ -835,9 +568,9 @@ function renderitemfield($moduleid, $itemvalue = array()) {
 		} elseif($key == 'comment') {
 			$commentalias = $modules[$moduleid]['data']['fields']['comment']['alias'];
 			empty($commentalias) && $commentalias = $lan['comment'];
-			$htmlfields .= "<tr><td>{$commentalias}</td><td align='left'><div id='comments'></div></td></tr>";
+			$htmlfields .= "<tr><td>{$commentalias}</td><td><iframe id='comments' onload='Javascript:SetframeHeight(\"comments\")' src='index.php?file=admincp&action=comments&id={$itemvalue['id']}&r=".random(6)."' frameborder='0' style='overflow-x:hidden;overflow-y:hidden;margin:0px auto;width:100%;'></iframe></td></tr>";
 		} else {
-			if($key == 'paging' || $key == 'attach') $itemfieldvalue = $itemvalue['id'];
+			if($key == 'paging') $itemfieldvalue = $itemvalue['id'];
 			$modulefield = rendermodulefield($key, $data['fields'][$key], $itemfieldvalue);
 			if($key == 'title') {
 				if(!empty($itemvalue['titlestyle'])) $modulefield .= "<script>$('#titlestyle').val('{$itemvalue['titlestyle']}');</script>";
@@ -857,10 +590,10 @@ function batchdeleteitem($array_id) {
 	$db->delete('texts', "itemid IN ({$ids})");
 	$query = $db->query_by('*', 'attachments', "itemid IN ({$ids})");
 	while($attach = $db->fetch_array($query)) {
-		@akunlink(FORE_ROOT.$attach['filename']);
+		@unlink(FORE_ROOT.$attach['filename']);
 	}
 	$db->delete('attachments', "itemid IN ({$ids})");
-	$db->delete('filenames', "id IN ({$ids}) AND type='item'");
+	$db->delete('filenames', "id IN ({$ids})");
 	$array_sections = array();
 	$array_categories = array();
 	$array_editors = array();
@@ -869,8 +602,8 @@ function batchdeleteitem($array_id) {
 		$array_sections[] = $item['section'];
 		$array_categories[] = $item['category'];
 		$array_editors[] = $item['editor'];
-		@akunlink(FORE_ROOT.itemhtmlname($item['id'], 1, $item));
-		if(!empty($item['picture'])) @akunlink(FORE_ROOT.$item['picture']);
+		@unlink(FORE_ROOT.itemhtmlname($item['id'], 1, $item));
+		if(!empty($item['picture'])) @unlink(FORE_ROOT.$item['picture']);
 	}
 	$db->delete('items', "id IN ({$ids})");
 	$db->delete('item_exts', "id IN ({$ids})");
@@ -879,17 +612,62 @@ function batchdeleteitem($array_id) {
 	refreshitemnum($array_editors, 'editor');
 }
 
-function showprocess($title, $processurl, $targeturl = '', $timeout = 100, $completetipmsg = '', $steps = array()) {
-	global $header_charset, $lan;
-	if(empty($completetipmsg)) $completetipmsg = $lan['operatesuccess'];
-	displaytemplate('admincp_process.htm', array('title' => $title, 'processurl' => $processurl, 'targeturl' => $targeturl, 'timeout' => $timeout, 'completetipmsg' => $completetipmsg, 'steps' => $steps));
+function refreshitemnum($ids, $type = 'category') {
+	global $tablepre, $db;
+	static $categories;
+	if(is_array($ids)) {
+		$ids = array_unique($ids);
+	} else {
+		$ids = array($ids);
+	}
+	if($type == 'category') {
+		foreach($ids as $id) {
+			if($id == 0) continue;
+			if(empty($categories[$id])) $categories[$id] = getcategorycache($id);
+			$allitems = $items = $db->get_by('COUNT(*)', 'items', "category='$id'");
+			if(!empty($categories[$id]['subcategories'])) {
+				foreach($categories[$id]['subcategories'] as $subcategory) {
+					if(empty($categories[$subcategory])) $categories[$subcategory] = getcategorycache($subcategory);
+					$allitems += $categories[$subcategory]['allitems'];
+				}
+			}
+			$db->update('categories', array('items' => $items, 'allitems' => $allitems), "id='$id'");
+		}
+	} elseif($type == 'section') {
+		foreach($ids as $id) {
+			$items = $db->get_by('COUNT(*)', 'items', "section='$id'");
+			$db->update('sections', array('items' => $items), "id='$id'");
+		}
+	} elseif($type == 'editor') {
+		if(count($ids) == 0) {
+			$ids = array();
+			$query = $db->query_by('editor', 'admins');
+			while($editor = $db->fetch_array($query)) {
+				$ids[] = $editor['editor'];
+			}
+		}
+		foreach($ids as $id) {
+			$items = $db->get_by('COUNT(*)', 'items', "editor='$id'");
+			$db->update('admins', array('items' => $items), "editor='$id'");
+		}
+	}
+}
+
+function showprocess($title, $processurl, $targeturl = '', $timeout = 100, $steps = array()) {
+	global $smarty;
+	$smarty->assign('title', $title);
+	$smarty->assign('processurl', $processurl);
+	$smarty->assign('targeturl', $targeturl);
+	$smarty->assign('timeout', $timeout);
+	$smarty->assign('steps', $steps);
+	displaytemplate('admincp_process.htm');
 	runinfo();
 	aexit();
 }
 
 function returnmodulefieldtype() {
 	global $lan;
-	return "<option value='string'>{$lan['string']}</option><option value='rich'>{$lan['richtext']}</option><option value='plain'>{$lan['plaintext']}</option>";
+	return "<option value='rich'>{$lan['richtext']}</option><option value='plain'>{$lan['plaintext']}</option>";
 }
 
 function freezeuser($uid, $freeze = 1) {
@@ -917,10 +695,8 @@ function getmenus($id = 'system') {
 		if($v['tag'] == 'MENU') {
 			$url = $v['attributes']['URL'];
 			$url = str_replace('[homepage]', $homepage, $url);
-			$id = '';
-			if(isset($v['attributes']['ID'])) $id = $v['attributes']['ID'];
 			$text = getxmltext($v['value']);
-			$menu = array('url' => $url, 'text' => $text, 'id' => $id);
+			$menu = array('url' => $url, 'text' => $text);
 			if(isset($v['attributes']['PLUSURL'])) $menu['plus'] = $v['attributes']['PLUSURL'];
 			$groups[$gid]['menus'][] = $menu;
 		}
@@ -931,26 +707,10 @@ function getmenus($id = 'system') {
 				$menu = array('url' => "index.php?file=admincp&action=items&module={$module['id']}", 'text' => $lan['manage'].$lan['space'].$module['modulename'], 'plus' => "index.php?file=admincp&action=newitem&module={$module['id']}");
 				$groups[$gid]['menus'][] = $menu;
 			}
+			
 		}
 		if($v['tag'] == 'HOMEPAGE') {
 			$homepage = $v['value'];
-		}
-	}
-	if(file_exists(AK_ROOT.'configs/appmenu.php')) {
-		if($fp = fopen(AK_ROOT.'configs/appmenu.php', 'r')) {
-			while(!feof($fp)) {
-				$line = trim(fgets($fp, 1024));
-				if(preg_match("/^<nav id=([0-9a-zA-Z]+)>(.+?)<\/nav>$/i", $line, $match)) {
-					$groups[$match[1]]['title'] = $match[2];
-					$groups[$match[1]]['menus'] = array();
-					continue;
-				}
-				if(preg_match("/^<a href=(.+?) nav=([0-9a-zA-Z]+)>(.+?)<\/a>/i", $line, $match)) {
-					$menu = array('url' => $match[1], 'text' => $match[3]);
-					$groups[$match[2]]['menus'][] = $menu;
-					continue;
-				}
-			}
 		}
 	}
 	$menus = array(
@@ -968,11 +728,7 @@ function rendermenu($groups) {
 		$html .= "<div id='menu_{$k}' class='menu_body'><div class='menutitle'>{$group['title']}</div><ul>";
 		foreach($group['menus'] as $menu) {
 			$menuhtml = rendermenulink($menu);
-			if(!empty($menu['id'])) {
-				$html .= "<li id='{$menu['id']}'>$menuhtml</li>";
-			} else {
-				$html .= "<li>$menuhtml</li>";
-			}
+			$html .= "<li>$menuhtml</li>";
 		}
 		$html .= "</ul></div>";
 	}
@@ -980,7 +736,6 @@ function rendermenu($groups) {
 }
 
 function rendermenulink($menu) {
-	global $vc;
 	if($menu['url'] == 'index.php?file=admincp&action=custom#') {
 		if(!file_exists(AK_ROOT.'configs/custom.menu.xml')) return '';
 	}
@@ -995,8 +750,7 @@ function rendermenulink($menu) {
 		}
 		$menu['url'] = substr($menu['url'], 0, -1);
 	}
-	$menu['url'] = str_replace('[vc]', $vc, $menu['url']);
-	return "{$plus}<a href='{$menu['url']}'{$target}>{$menu['text']}</a>";
+	return "{$plus}<a href='{$menu['url']}'{$target} onclick='javascript:clicklink(this)'>{$menu['text']}</a>";
 }
 
 function rendernav($groups) {
@@ -1017,56 +771,33 @@ function getxmltext($text) {
 
 function editor($name, $type = 'text', $value = '', $ext = array()) {
 	$width = empty($ext['width']) ? '100%' : $ext['width'];
-	$height = empty($ext['height']) ? '399px' : $ext['height'];
+	$height = empty($ext['height']) ? '200px' : $ext['height'];
 	$uploadimg = empty($ext['uploadimgurl']) ? '' : "upImgUrl:'{$ext['uploadimgurl']}',";
 	$id = empty($ext['id']) ? $name.'_'.random(6) : $ext['id'];
 	$class = '';
 	if($type == 'rich') $class = " class=\"xheditor {hoverExecDelay:-1,{$uploadimg}upImgExt:'jpg,jpeg,gif,png',tools:'Source,Pastetext,|,Blocktag,Fontface,FontSize,Bold,Italic,Underline,Strikethrough,FontColor,BackColor,SelectAll,Removeformat,|,Align,List,Outdent,Indent,|,Link,Unlink,Anchor,Img,Hr,Table',loadCSS:'<style>body{font-size:14px;}</style>'}\"";
-	$value = ak_htmlspecialchars($value);
-	return "<textarea id='$id' name='$name' style='width:$width;height:$height;'$class>".$value."</textarea>";
+	return "<textarea id='$id' name='$name' style='width:$width;height:$height;'$class>$value</textarea>";
 }
 
-function h($params) {
-	global $lan;
-	$k = $params;
-	if(is_array($params)) $k = $params['k'];
-	if(strpos($k, ':') === false) {
-		$manual = $k;
-		$text = $lan['help'];
-	} else {
-		list($manual, $text) = explode(':', $k);
-		if($text != '?') $text = $lan[$text];
+function h($params){
+	$manual = $params;
+	if(is_array($params)) $manual = $params['name'];
+	return "http://www.akhtm.com/manual/{$manual}.htm?source=cp";
+}
+
+function loadlan($lanfile) {
+	$lan = array();
+	if(file_exists($lanfile)) {
+		$fp = fopen($lanfile, 'r');
+		while(!feof($fp)) {
+			$line = trim(fgets($fp, 1024));
+			if($line == '') continue;
+			if(strpos($line, "\t") === false) continue;
+			list($_k, $_l) = explode("\t", $line);
+			$lan[$_k] = $_l;
+		}
+		fclose($fp);
 	}
-	$class = '';
-	if(isset($params['class'])) $class = $params['class'];
-	return "<a href='http://www.akhtm.com/manual/{$manual}.htm?source=cp' class='$class' target='_blank'>{$text}</a>";
-}
-
-function checkuploadfile($content) {
-	if(strpos($content, '<?') !== false && preg_match('/eval\(/i', $content)) return false;
-	return true;
-}
-
-function savevariables($variables) {
-	global $db;
-	$variables = explode(',', $variables);
-	foreach($variables as $variable) {
-		if(!isset($_POST[$variable])) continue;
-		$value = $_POST[$variable];
-		if(is_array($value)) $value = implode(',', $value);
-		$db->update('variables', array('value' => $value), "variable='$variable'");
-	}
-	require_once(CORE_ROOT.'include/cache.func.php');
-	updatecache('globalvariables');
-}
-
-function fieldname($key, $setting) {
-	global $lan;
-	if(!empty($setting['alias'])) return $setting['alias'];
-	if(isset($lan[$key])) return $lan[$key];
-	if($key == 'dateline') return $lan['time'];
-	if(strlen($key) == 8 && substr($key, 0, 7) == 'orderby') return $lan['order'].substr($key, 7);
-	if(strlen($key) == 7 && substr($key, 0, 6) == 'string') return $lan['string'].substr($key, 6);
-	if(strlen($key) == 3 && substr($key, 0, 2) == 'pv') return $lan['pv'].substr($key, 2);
+	return $lan;
 }
 ?>

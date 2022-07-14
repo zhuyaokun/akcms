@@ -4,23 +4,8 @@ if(empty($cachetype)) $cachetype = 'file';
 require_once(CORE_ROOT.'include/cache.'.$cachetype.'.func.php');
 function updatecache($cachename = '', $designate = array()) {
 	global $db, $tablepre, $settings, $homepage;
-	if(empty($db)) $db = db();
-	if(empty($cachename) || $cachename == 'modules') {
-		$query = $db->query_by('*', 'modules', '1', 'id');
-		$return = array();
-		while($module = $db->fetch_array($query)) {
-			$module['data'] = ak_unserialize($module['data']);
-			$return[$module['id']] = $module;
-		}
-		$_query = $db->query_by('id,category,module', 'categories');
-		while($_category = $db->fetch_array($_query)) {
-			$moduleid = $_category['module'];
-			if($moduleid <= 0) $moduleid = 1;
-			if(!isset($return[$moduleid])) continue;
-			if(!isset($return[$moduleid]['categories'])) $return[$moduleid]['categories'] = array();
-			$return[$moduleid]['categories'][$_category['id']] = $_category['category'];
-		}
-		setcache('modules', $return);
+	if(empty($db)) {
+		$db = db();
 	}
 	if(empty($cachename) || $cachename == 'settings') {
 		$return = array();
@@ -91,15 +76,14 @@ function updatecache($cachename = '', $designate = array()) {
 		global $template_path;
 		$return = array();
 		$dir = AK_ROOT.'configs/templates/'.$template_path.'/';
-		if($dh = opendir($dir)) {
-			while($filename = readdir($dh)) {
-				if($filename != '.' && $filename != '..' && substr($filename, 0, 1) == ',') {
-					$return[] = substr($filename, 1);
-				}
+		$dh  = opendir($dir);
+		while (false !== ($filename = readdir($dh))) {
+			if($filename != '.' && $filename != '..' && substr($filename, 0, 1) == ',') {
+				$return[] = substr($filename, 1);
 			}
-			sort($return);
-			setcache('templates', $return);
 		}
+		sort($return);
+		setcache('templates', $return);
 	}
 	if(empty($cachename) || $cachename == 'globalvariables') {
 		$return = array();
@@ -143,23 +127,61 @@ function updatecache($cachename = '', $designate = array()) {
 		);
 		setcache('infos', $return);
 	}
-	if(empty($cachename) || $cachename == 'apps') {
+	if(empty($cachename) || $cachename == 'plugins') {
+		$paths = readpathtoarray(AK_ROOT.'/plugins');
 		$return = array();
-		$apps = readpathtoarray(AK_ROOT.'configs/apps/', 1);
-		foreach($apps as $app) {
-			if(is_dir(AK_ROOT.'configs/apps/'.$app.'/templateplugin')) {
-				$tps = readpathtoarray(AK_ROOT.'configs/apps/'.$app.'/templateplugin', 1);
-				foreach($tps as $tp) {
-					if(strlen($tp) < 5) continue;
-					if(substr($tp, -4) !== '.php') continue;
-					if(!preg_match('/^[a-zA-Z][a-zA-Z0-9_]+\.php$/i', $tp)) continue;
-					$return[] = substr($tp, 0, -4);
-				}
-			}
+		foreach($paths as $path) {
+			if(is_dir($path)) continue;
+			if(!is_readable($path)) continue;
+			if(fileext($path) == 'php') $return[] = calfilenamefromurl($path);
 		}
-		setcache('templateplugins', $return);
-		require_once(CORE_ROOT.'include/app.func.php');
-		scanapps();
+		setcache('plugins', $return);
+	}
+	if(empty($cachename) || $cachename == 'modules') {
+		$query = $db->query_by('*', 'modules', '1', 'id');
+		$return = array();
+		while($module = $db->fetch_array($query)) {
+			$module['data'] = ak_unserialize($module['data']);
+			$return[$module['id']] = $module;
+		}
+		$_query = $db->query_by('id,category,module', 'categories');
+		while($_category = $db->fetch_array($_query)) {
+			$moduleid = $_category['module'];
+			if($moduleid <= 0) $moduleid = 1;
+			if(!isset($return[$moduleid])) continue;
+			if(!isset($return[$moduleid]['categories'])) $return[$moduleid]['categories'] = array();
+			$return[$moduleid]['categories'][$_category['id']] = $_category['category'];
+		}
+		setcache('modules', $return);
+	}
+	if(empty($cachename) || $cachename == 'ses') {
+		$query = $db->query_by('*', 'ses', '1', 'id');
+		$return = array();
+		while($se = $db->fetch_array($query)) {
+			$se['data'] = ak_unserialize($se['value']);
+			$return[$se['id']] = $se;
+		}
+		setcache('ses', $return);
+	}
+	if(empty($cachename) || $cachename == 'spiders') {
+		$query = $db->query_by('*', 'spider_contentrules', '1', 'id');
+		while($rule = $db->fetch_array($query)) {
+			$value = ak_unserialize($rule['value']);
+			$value['id'] = $rule['id'];
+			setcache('spidercontentrule'.$rule['id'], $value);
+		}
+		$query = $db->query_by('*', 'spider_contentpagerules', '1', 'id');
+		while($rule = $db->fetch_array($query)) {
+			$value = ak_unserialize($rule['value']);
+			$value['id'] = $rule['id'];
+			setcache('spidercontentpagerule'.$rule['id'], $value);
+		}
+		$query = $db->query_by('*', 'spider_listrules', '1', 'id');
+		while($rule = $db->fetch_array($query)) {
+			$value = ak_unserialize($rule['value']);
+			$value['id'] = $rule['id'];
+			setcache('spiderlistrule'.$rule['id'], $value);
+		}
 	}
 	if(empty($cachename) || $cachename == 'filters') {
 		$return = array();
@@ -167,9 +189,17 @@ function updatecache($cachename = '', $designate = array()) {
 		$query = $db->query($sql);
 		while($f = $db->fetch_array($query)) {
 			$return[$f['id']] = $f['data'];
-			if(!empty($f['title'])) $return[$f['title']] = $f['data'];
 		}
 		setcache('filters', $return);
+	}
+	if(empty($cachename) || $cachename == 'domains') {
+		$return = array();
+		$sql = "SELECT id,domain FROM {$tablepre}_categories";
+		$query = $db->query($sql);
+		while($c = $db->fetch_array($query)) {
+			$return[$c['domain']] = $c['id'];
+		}
+		setcache('domains', $return);
 	}
 }
 

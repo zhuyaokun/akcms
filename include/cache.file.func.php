@@ -36,7 +36,7 @@ function expirecache($key) {
 
 function deletecache($key) {
 	$filename = calcachefilename($key);
-	if(file_exists($filename)) akunlink($filename);
+	if(file_exists($filename)) unlink($filename);
 }
 
 function calcachefilename($key) {
@@ -44,7 +44,7 @@ function calcachefilename($key) {
 	foreach($character as $c) {
 		$key = str_replace($c, '#', $key);
 	}
-	@$filename = CACHEPATH.$GLOBALS['codekey'].'_'.$key.'.txt';
+	$filename = CACHEPATH.$GLOBALS['codekey'].'_'.$key.'.txt';
 	return $filename;
 }
 ?>

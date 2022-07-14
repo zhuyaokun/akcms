@@ -1,6 +1,5 @@
 <?php
 if(!defined('CORE_ROOT')) exit;
-
 function addwatermark($source, $sourcesize = array()) {
 	global $setting_attachwatermarkposition;
 	if(file_exists(AK_ROOT.'configs/images/watermark.png')) {
@@ -63,6 +62,25 @@ function addwatermark($source, $sourcesize = array()) {
 	return $source;
 }
 
+function corecaptcha($captcha) {
+	$width = 38;
+	$height = 15;
+	$im = imagecreate($width, $height);
+
+	$bg = imagecolorallocate($im, 255, 255, 255);
+	$textcolor = imagecolorallocate($im, 0, 0, 255);
+	for($i = 0; $i < $width; $i ++) {
+		for($j = 0; $j < $height; $j ++) {
+			$bgcrumb = imagecolorallocate($im, rand(200,255), rand(200,255), rand(200,255));
+			if(empty($bgcrumb) || $bgcrumb == -1) $bgcrumb = rand(2, 255);
+			imagefilledrectangle($im, $i, $j, $i + 1, $j + 1, $bgcrumb);
+		}
+	}
+	imagestring($im, 5, 2, 0, $captcha, $textcolor);
+	header("Content-type: image/png");
+	imagepng($im);
+}
+
 function reducepicture($sourceimg, $sourcesize, $size) {
 	list($sw, $sh) = $sourcesize;
 	if($size >= $sw) return $sourceimg;
@@ -74,9 +92,8 @@ function reducepicture($sourceimg, $sourcesize, $size) {
 }
 
 function operateuploadpicture($source, $module) {
-	global $setting_attachimagequality, $setting_attachwatermarkposition, $setting_keeporiginal;
+	global $setting_attachimagequality, $setting_attachwatermarkposition;
 	if(!file_exists($source) || filesize($source) < 43) return false;
-	if(!empty($setting_keeporiginal)) return false;
 	$sourcesize = getimagesize($source);
 	if($sourcesize['mime'] == 'image/gif') {
 		$fp = fopen($source, 'r');
@@ -97,17 +114,7 @@ function operateuploadpicture($source, $module) {
 	if($setting_attachwatermarkposition != -1) {
 		$sourceimg = addwatermark($sourceimg, $sourcesize);
 	}
-	switch($sourcesize['mime']) {
-		case 'image/jpeg':
-			imagejpeg($sourceimg, $source, $setting_attachimagequality);
-			break;
-		case 'image/gif':
-			imagegif($sourceimg, $source);
-			break;
-		case 'image/png':
-			imagepng($sourceimg, $source);
-			break;
-	}
+	imagejpeg($sourceimg, $source, $setting_attachimagequality);
 }
 
 function setimagequality($source, $quality) {
@@ -157,7 +164,7 @@ function getthumbofpicture($picture, $tw, $th = 'auto') {
 	$sw = $info[0];
 	$sh = $info[1];
 	$sourceimg = imagecreatefromfile($picture, $info);
-	if(substr($picture, -1) == '-') akunlink($picture);
+	if(substr($picture, -1) == '-') unlink($picture);
 	if($th == 'auto') {
 		$th = ceil($sh * $tw / $sw);
 	}
@@ -180,7 +187,7 @@ function getthumbofpicture($picture, $tw, $th = 'auto') {
 	}
 	imagecopyresampled($targetimg, $sourceimg, 0, 0, $l1, $t1, $tw, $th, $sw, $sh);
 	ak_touch(FORE_ROOT.$thumb);
-	imagepng($targetimg, FORE_ROOT.$thumb);
+	imagejpeg($targetimg, FORE_ROOT.$thumb, $setting_attachimagequality);
 	touchcdn($homepage.$thumb);
 	return cdnurl($thumb);
 }
