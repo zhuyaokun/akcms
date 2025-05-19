@@ -1622,7 +1622,8 @@ function stringtoint($string) {
 	return abs($int % mt_getrandmax());
 }
 
-function match($pattern, $input, $fieldid, $filter = 0, $fieldfilter = 0) {
+# 跟php8冲突
+function _match($pattern, $input, $fieldid, $filter = 0, $fieldfilter = 0) {
 	preg_match_all($pattern, $input, $match);
 	$count = count($match[0]);
 	$return = array();
