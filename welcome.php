@@ -200,7 +200,7 @@ if($get_action == 'phpinfo') {
 	$smarty->assign('dbversion', $db->version());
 	$smarty->assign('akversion', $sysedition);
 	$smarty->assign('theme', $theme);
-	$smarty->assign('authsuccess', $authsuccess);
+	$smarty->assign('authsuccess', $authsuccess ?? 0);
 	$smarty->assign('iscreator', iscreator());
 	$smarty->assign('maxupload', $max_upload);
 	$smarty->assign('maxexetime', $maxexetime);

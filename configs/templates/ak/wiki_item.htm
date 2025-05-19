@@ -1,0 +1,76 @@
+		
+		<section class="p-t-50">
+			<div class="container">
+				<div class="row">
+					<div class="col-md-12">
+						<h1>CCBoot Wiki Database</h1>
+					</div>
+				</div>
+				
+				<div class="row">
+				
+					<!-- RIGHT COLUMN: Sidebar -->
+					<div class="sidebar col-md-4">
+					
+						<!-- Vertical Tabs -->
+						<div class="widget clearfix widget-search">
+							<form class="form-inline" method="post" action="javascript:searchUrl()">
+								<div class="input-group">
+									<input type="text" name="q" placeholder="Search our Wiki..." class="form-control" id="get_keywords">
+									<span class="input-group-btn">
+										<button type="submit" class="btn color btn-primary"><i class="fa fa-search"></i></button>	
+									</span>
+								</div>
+							</form>
+						</div>
+						
+						<div class="mobile-no-show tabs tabs-vertical color">
+							<ul class="tabs-navigation" style="width: 350px;">
+								<li class="active"><{getcategories id="$category" template="<a href=()[url]()>[category]</a>"}>
+									<ul class="no-border"style="padding-left: 10px;">
+										<{getitems num=100 category="$category" orderby="orderby" where="orderby2!=1 and orderby>=0" template="<li class=\"list-group-item <#ak_if(#)[%itemid]==$id(#)active(#)#>\"><a href=()[url]() >[title]</a></li>"}>
+									</ul>
+								</li>
+							</ul>							
+						</div>	
+						<!--END: Vertical Tabs -->
+						
+					</div>
+					<!-- END: RIGHT COLUMN: Sidebar -->
+					
+					<!-- LEFT COLUMN: Content -->
+					<div class="post-content col-md-8">	
+						
+						<div>
+							<p><{getcategories id="$categoryup" template="<a href=()[url]()>Wiki&nbsp;Home</a>"}> <i class="fa fa-angle-right"></i> <{getcategories id="$category" template="<a href=()[url]()>[category]</a>"}> <i class="fa fa-angle-right"></i> <{$title}></p>
+							<h3><{$title}></h3>			
+							<p><i class="fa fa-clock-o"></i> <{$last_y}>/<{$last_m}>/<{$last_d}> <{$last_h}>:<{$last_i}></p>
+							<div class="seperator"></div>
+							
+							<{$data}>
+							
+							<div class="seperator"></div>
+							<h5>Related: </h5>
+							<{if $keywords}>
+							<{getitems num="5" skip="$id" category="$v_search_category" where='orderby2!=1 and orderby>=0' orderby="update_reverse" includesubcategory="1" keywords="$keywords" template="
+								<p><a href=()[url]() title=()[title]()>[title]</a></p>
+							"}>
+							<{/if}>
+						</div>
+						
+					</div>
+					<!-- END: LEFT COLUMN: Content -->
+					
+				</div>
+			</div>
+		</section>
+		
+		<section class="text-light parallax background-overlay p-t-150 p-b-150" style="background-image: url('images/bg022.jpg'); background-position: 50% 90px;" data-stellar-background-ratio="0.6">
+			<div class="container">
+				<div class="heading heading-center headingnoafter" style="margin-bottom: -40px;">
+					<h2>Get Your FREE Trial Today</h2>
+					<span class="lead">Get started in just minutes…</span>
+					<a href="download.htm" class="button transparent rounded"><span>Start Your FREE Trial Today</span></a>
+				</div>						
+			</div>
+		</section>

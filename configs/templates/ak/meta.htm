@@ -1,0 +1,36 @@
+<head>
+	<base href="https://www.ccboot.com/" />
+	<link rel="shortcut icon" href="images/favicon.ico">
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+	<{if $id eq 0}>
+		<{if $category eq $v_search_category_id}>
+			<title>CCBoot Diskless Solution Search - What's <{$get_s}></title>
+			<meta name="description" content="CCBoot diskless solution search result for <{$get_s}>." />
+			<meta name="keywords" content="<{$get_s}>" />
+		<{else}>
+			<title><{$alias}><{if $categoryup eq $v_wiki_category_id}> - CCBoot v3.0 Diskless Boot System<{/if}></title>
+			<meta name="description" content="<{$description}>" />
+			<meta name="keywords" content="<{$keywords}>" />
+		<{/if}>
+	<{else}>
+		<title><{$_pagetitle}><{if $categoryup eq $v_wiki_category_id}> - CCBoot v3.0 Diskless Boot System<{/if}></title>
+		<meta name="description" content="<{$digest}>" />
+		<meta name="keywords" content="<{$keywords}>" />
+	<{/if}>
+	<{if $category eq 10}>
+	<meta property="fb:app_id" content="1228713790481252" />
+	<meta property="og:title" content="Welcome to CCBoot - Diskless solution for saving time and money at your business" />
+	<meta property="og:type" content="website" />
+	<meta property="og:image" content="https://www.ccboot.com/upload/internet-cafe-in-kore-10.JPG" />
+	<meta property="og:url" content="https://www.ccboot.com/" />
+	<meta property="og:site_name" content="CCBoot" />
+	<meta property="og:description" content="A complete diskless solution for gaming centers, cafes, schools, colleges and universities which helps administrators reduce their daily workload." />		
+	<{/if}>
+	<!-- CSS -->
+	<link href="css/custom.css.php" rel="stylesheet">
+	<!--[if lt IE 9]>
+	<script src="https://css3-mediaqueries-js.googlecode.com/svn/trunk/css3-mediaqueries.js"></script>
+	<![endif]-->
+</head>

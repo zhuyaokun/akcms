@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- meta.html -->
+<{include file="meta.htm"}>
+
+<body class="wide no-page-loader">
+
+	<!-- WRAPPER -->
+	<div class="wrapper">
+
+		<!-- header.html -->
+		<{include file="header.htm"}>
+
+	<{if ($category eq $v_wiki_category_id and $id eq 0) or ($categoryup eq $v_wiki_category_id and $id eq 0) or ($category eq $v_search_category_id) or ($category eq 73)}> 
+	<{* wiki category or wiki sub or search result or videos *}>
+		
+		<{if ($category eq $v_wiki_category_id and $id eq 0)}>
+		<!-- PAGE TITLE -->
+		<section id="page-title" style="background: url('images/bg016.jpg')" data-stellar-background-ratio="0.6" class="page-title-center page-title-animate page-title-parallax text-light">
+			<div class="background-overlay"></div>
+			<div class="container">
+				<div class="page-title col-md-8 text-shadow-dark">
+					<h1 class="text-uppercase text-medium">CCBoot Wiki Database</h1>
+				</div>
+			</div>
+		</section>
+		<!-- END: PAGE TITLE -->
+		<{/if}>
+		
+		<section>
+			<div class="container">
+				<div class="row">
+				
+					<!-- LEFT COLUMN: Mobile Only -->
+					<div class="sidebar col-md-4 mobile-show">
+						<div class="widget clearfix widget-search">
+							<form class="form-inline" method="post" action="javascript:searchUrl()">
+								<div class="input-group">
+									<input type="text" name="q" placeholder="Search our Wiki..." class="form-control" id="get_keywords_left">
+									<span class="input-group-btn">
+										<button type="submit" class="btn color btn-primary"><i class="fa fa-search"></i></button>	
+									</span>
+								</div>
+							</form>
+						</div>						
+					</div>
+					<!-- END: LEFT COLUMN: Mobile Only -->
+					
+					<!-- LEFT COLUMN: Content -->
+					<div class="post-content col-md-9">	
+						
+						<{if ($category eq $v_wiki_category_id and $id eq 0)}> 			
+						<div class="post-item">
+							<h2 class="m-b-20">CCBoot Video Guides</h2>									
+							<p>Here you can watch all the video guides for CCBoot.</p>
+							
+							<div>
+								<ol style="line-height: 30px;">
+									<li><a href="https://www.youtube.com/watch?v=ZaQDJ8pmMQU" target="_blank">CCBoot server installation, configuration and booting client diskless</a></li>
+									<li><a href="https://www.youtube.com/watch?v=O8cja2OCvvo" target="_blank">CCBoot client installation and image upload</a></li>
+									<li><a href="https://www.youtube.com/watch?v=YNVC5Ng2mJI" target="_blank">Add new machine to image and remove unwanted NIC</a></li>
+									<li><a href="https://www.youtube.com/watch?v=Daa49iQztHM" target="_blank">How to update image and games in CCBoot</a></li>
+									<li style="list-style: none;"><a href="videos.htm"><i class="fa fa-plus-square-o" style="margin-left: -21px; margin-right: 9px;"></i>More videos...</a></li>
+								</ol>
+							</div>	
+
+						</div>
+						
+						<div class="post-item">
+							<h2 class="m-b-20">CCBoot Wiki Database</h2>									
+							<p>Here you can find all the guide and help you might need for CCBoot.</p>
+							
+							<!-- Vertical Tabs -->
+							<div class="mobile-no-show tabs tabs-vertical color">
+								<ul class="tabs-navigation">
+								<{getcategories xrootcategory="$v_wiki_category_id" id="$v_open_wiki" num="100" orderby="orderby" template="<li<#ak_if(#)[%id]=='1'(#) class=\"active\" (#)#>><a href=\"#menuTitle[id]\">[category]</a></li>"}>
+								</ul>
+								
+								<div class="tabs-content">
+								<{getcategories xrootcategory="$v_wiki_category_id" id="$v_open_wiki" num="100" orderby="orderby" template="
+									
+									<div <#ak_if(#)[%id]=='1'(#) class=\"tab-pane active\" (#) class=\"tab-pane\" (#)#> id='menuTitle[id]'>
+										<h4><a href='[url]'>[category]</a></h4>
+										<ul class=\"list-group no-border\">
+										<#getitems(#)category=[%categoryid](#)num=100(#)orderby=orderby(#)where=orderby2!=1 and orderby>=0(#)template=<li class='list-group-item'><a href='[url]'>[title]</a></li>#>
+										</ul>
+									</div>							
+								"}>
+								</div>
+							</div>
+							<!--END: Vertical Tabs -->
+							
+							<!-- Accordion (mobile-only) -->
+							<div class="mobile-show">
+								<div class="accordion color">
+								<{getcategories xrootcategory="$v_wiki_category_id" id="$v_open_wiki" num="100" orderby="orderby" template="
+									
+									<div class=\"ac-item\">
+										<h5 class=\"ac-title\">[category]</h5>
+										<div class=\"ac-content\">
+											<h4><a href='[url]'>[category]</a></h4>
+											<ul class=\"list-group no-border\">
+											<#getitems(#)category=[%categoryid](#)num=100(#)orderby=orderby(#)where=orderby2!=1 and orderby>=0(#)template=<li class='list-group-item'><a href='[url]'>[title]</a></li>#>
+											</ul>
+										</div>
+									</div>
+							
+								"}>
+								</div>
+							</div>							
+							<!--END: Accordion (mobile-only) -->
+							
+							<hr class="space" style="height: 20px;" />
+							
+						</div>
+						
+						<{elseif ($categoryup eq $v_wiki_category_id and $id eq 0)}>
+						<div class="post-item">
+							<h3><{getcategories id="$categoryup" template='<a href=()[url]()>CCBoot Wiki</a>'}> <i class="fa fa-angle-right"></i> <{$categoryname}></h3>									
+							<ol class="no-border">								
+								<{getitems num="100" orderby="orderby" where='orderby2<>1 and orderby>=0' category="$category" template='
+								<li><a href=()[url]()>[title]</a></li>
+								'}>
+							</ol>								
+						</div>		
+						
+						<{elseif ($category eq 73)}><{* videos *}>
+						<div class="post-item">						
+							<h3>CCBoot Video Guides</h3>
+							<{$data}>
+						</div>	
+						
+						<{else}>
+						<div class="post-item">
+							<h3>Search results for: <{$get_s}></h3>
+							<ol class="no-border">
+								<{getitems num="100" keywords="$get_s" category="$v_search_category" includesubcategory="1" where="orderby>=0" orderby="update_reverse" searchtext="1" template='
+								<li><a href=()[url]()>[title]</a></li>
+								'}>
+							</ol>								
+						</div>							
+						<{/if}>
+						
+					</div>
+					<!-- END: LEFT COLUMN: Content -->
+					
+					<!-- RIGHT COLUMN: Sidebar -->
+					<div class="sidebar sidebar-modern col-md-3">
+					<{include file="right.htm"}>
+					</div>
+					<!-- END: RIGHT COLUMN: Sidebar -->
+					
+				</div>
+			</div>
+		</section>
+	
+	<{elseif ($categoryup eq $v_wiki_category_id)}> <{* wiki-item *}>
+		<{include file="wiki_item.htm"}>
+		
+	<{elseif ($category eq 36)}>	<{* cases *}>
+		<{if ($category eq 36 and $id eq 0)}>	<{* cases *}>
+		<!-- PAGE TITLE -->
+		<section id="page-title" style="background: url('images/bg015.jpg')" data-stellar-background-ratio="0.6" class="page-title-center page-title-animate page-title-parallax text-light">
+			<div class="background-overlay"></div>
+			<div class="container">
+				<div class="page-title col-md-8 text-shadow-dark">
+					<h1 class="text-uppercase text-medium"><{$categoryname}></h1>
+				</div>
+			</div>
+		</section>
+		<!-- END: PAGE TITLE -->
+		
+		<section>
+			<div class="container">
+				<div class="row">
+					
+					<!-- LEFT COLUMN: Content -->
+					<div class="post-content col-md-9">
+						<!-- Vertical Tabs -->
+						<div class="post-item">
+							<h3>CCBoot Successful Cases</h3>		
+							<p>Here you will find lists of succesful application of CCBoot in several internet cafes, schools, etc around the world.</p>
+							<div class="seperator"></div>							
+							<ol class="no-border">
+							<{getitems num="100" category="$v_case_category_id" includesubcategory="1" orderby="orderby_reverse" where="orderby2<>1 and orderby>=0" searchtext="1" template='
+								<li><a href=()[url]()>[title]</a></li>
+								'}>
+							</ol>							
+						</div>
+						<!--END: Vertical Tabs -->
+					</div>
+					<!-- END: LEFT COLUMN: Content -->
+					
+					<!-- RIGHT COLUMN: Sidebar -->
+					<div class="sidebar sidebar-modern col-md-3">
+					<{include file="right.htm"}>
+					</div>
+					<!-- END: RIGHT COLUMN: Sidebar -->
+					
+				</div>
+			</div>
+		</section>
+		
+		<section class="text-light parallax background-overlay p-t-150 p-b-150" style="background-image: url('images/bg023.jpg'); background-position: 50% 90px;" data-stellar-background-ratio="0.6">
+			<div class="container">
+				<div class="heading heading-center headingnoafter" style="margin-bottom: -40px;">
+					<h2>Get Your FREE Trial Today</h2>
+					<span class="lead">Get started in just minutes…</span>
+					<a href="download.htm" class="button transparent rounded"><span>Start Your FREE Trial Today</span></a>
+				</div>						
+			</div>
+		</section>
+		<{else}>
+			<{include file="case_item.htm"}>
+		<{/if}>
+	
+	<{else}>
+		<{$data}>
+	<{/if}>
+	
+		<!-- footer.html -->
+		<{include file="footer.htm"}>
+
+	</div>
+	<!-- END: WRAPPER -->
+
+	<!-- GO TOP BUTTON -->
+	<a class="gototop gototop-button" href="#"><i class="fa fa-chevron-up"></i></a>
+	<link href="https://fonts.googleapis.com/css?family=Open+Sans:400,300,800,700,600%7CRaleway:100,300,600,700,800" rel="stylesheet" type="text/css" />
+	
+	<!-- Javascripts -->
+	<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+	<script src="https://use.fontawesome.com/6eee9939ea.js"></script>
+	<script src="js/custom.js.php?livechat=0"></script>
+
+	<script type="text/javascript">
+	function video_intro_play() {
+		$('#video-intro-section').css('visibility', 'visible');
+		$('#video-intro-section').css('opacity', '1');
+		$('#video-intro-section').css('transition', '3s');
+		document.getElementById('video-intro-iframe').contentWindow.postMessage(JSON.stringify({
+			"event": "command",
+			"func": 'playVideo',
+			"args": [],
+			"id": 'video-iframe'
+		}),'*');
+
+	}
+
+	$('#video-intro-section .dark-background').click(function() {
+		$('#video-intro-section').css('visibility', 'hidden');
+		$('#video-intro-section').css('opacity', '0');
+		$('#video-intro-section').css('transition', '3s');
+
+		document.getElementById('video-intro-iframe').contentWindow.postMessage(JSON.stringify({
+			"event": "command",
+			"func": 'pauseVideo',
+			"args": [],
+			"id": 'video-iframe'
+		}),'*');
+
+	});
+	</script>
+
+	<div id="a_livechat" tabindex="-1" class=" " title="Live chat button" style="cursor: pointer; visibility: visible;">
+		<div style="right: 0px;top: 66%; margin-top: -0px;-ms-transform-origin:100% 50%; -webkit-transform-origin:100% 50%; transform-origin:100% 50%; z-index: 999997; position: fixed;">
+			<a href="https://www.icafecloud.com/discord/" target="_blank">
+				<div style="position:static; cursor:pointer; transform: rotate(90deg); -ms-transform: rotate(90deg); -webkit-transform: rotate(90deg); -moz-transform: rotate(90deg); -o-transform: rotate(90deg); transform-origin: 0% 0%; -moz-transform-origin: 0% 0%; -webkit-transform-origin: 0% 0%; -o-transform-origin: 0% 0%;">
+					<div style="cursor:pointer; box-shadow:0 0 3px #111111; -moz-box-shadow:0 0 3px #111111; -webkit-box-shadow:0 0 3px #111111; border-radius:0 0 5px 5px; -moz-border-radius:0 0 5px 5px; -webkit-border-radius:0 0 5px 5px; vertical-align:top; white-space:nowrap; font-weight:bold; font-family:Arial,Verdana,Helvetica,sans-serif; font-size:20px; cursor:pointer; padding:0px 3px 3px; position:absolute; top:0; left:0; border-top:0 !important; text-align:center; background-color:#FFFFFF; border:1px solid #000000;"><div style="box-sizing:content-box; -moz-box-sizing:content-box; -webkit-box-sizing:content-box; -ms-box-sizing:content-box; position:static; font-weight:bold; font-family:Arial,Verdana,Helvetica,sans-serif; font-size:20px; line-height:18px; height:18px; padding:8px 23px; background-color:#1DA158; color:#FFFFFF;">Live Chat</div>
+					</div>
+				</div>
+			</a>
+		</div>
+	</div>
+	<!--<{$category}> - <{$id}>-->
+</body>
+
+</html>

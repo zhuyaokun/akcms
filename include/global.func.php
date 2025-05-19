@@ -486,9 +486,9 @@ function itemhtmlname($id, $version = 1, $item = array(), $cc = array()) {
 		$_path = $cc['path'];
 	}
 	if($version == 1) {
-		$storemethod = $cc['storemethod'];
+		$storemethod = empty($cc) ? '' : $cc['storemethod'];
 	} else {
-		$storemethod = $cc['storemethod'.$version];
+		$storemethod = empty($cc) ? '' : $cc['storemethod'.$version];
 	}
 	$path = str_replace('[categorypath]', $fullpath, $storemethod);
 	$path = str_replace('[path]', $_path, $path);
@@ -497,7 +497,9 @@ function itemhtmlname($id, $version = 1, $item = array(), $cc = array()) {
 	$path = str_replace('[m]', $month, $path);
 	$path = str_replace('[d]', $day, $path);
 	$path = str_replace('[id]', $id, $path);
-	$path = preg_replace('/\[id\/([\d]+)\]/e', "ceil($id/\\1)", $path);
+	#$path = preg_replace('/\[id\/([\d]+)\]/e', "ceil($id/\\1)", $path);
+	$path = preg_replace_callback('/\[id\/([\d]+)\]/', function ($matches){
+		return "[id/" . ceil($id/$matches[1]) . "]";}, $path);
 	if(empty($filename)) {
 		$filename = "{$id}{$setting_htmlexpand}";
 	} else {

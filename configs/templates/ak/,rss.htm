@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet type="text/xsl" href="rss.xslt"?>
+<!-- generator="FEEDCREATOR_VERSION" -->
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title><{getcategories id=$v_home_category_id template="[alias]" }></title>
+		<description><{getcategories id=$v_home_category_id template="[description]" }></description>
+		<link><{$v_hostname}></link>
+		<lastBuildDate><{$smarty.now|date_format:"%a, %d %b %Y %H:%M:%S +0000"}></lastBuildDate>
+		<generator>Youngzsoft</generator>
+		<language>en-us</language>
+		<copyright>Copyight 2000-<{$smarty.now|date_format:"%Y"}> Youngzsoft Inc. All Rights Reserved.</copyright>
+		<pubDate><{$smarty.now|date_format:"%a, %d %b %Y %H:%M:%S +0000"}></pubDate>
+		<atom:link rel="self" type="application/rss+xml" href="<{$v_hostname}>rss.xml"/>
+		<{getitems timelimit="1" num="100" where='orderby2!=1 and orderby>=0' orderby="update_reverse" skipcategory=$v_sitemap_skip template=
+"		<item>
+			<title>[title]</title>
+			<link>[url]</link>
+			<description><![CDATA[[digest]]]></description>
+			<author>support@youngzsoft.net(Youngzsoft)</author>
+			<category>[category]</category>
+			<comments>[url]#comment</comments>
+			<pubDate>[D], [d] [M] [y] [h]:[i]:[s]</pubDate>
+			<guid>[url]?[last_y][last_m][last_d][last_h][last_i][last_s]</guid>
+		</item>
+"}>
+	</channel>
+</rss>

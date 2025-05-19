@@ -1,0 +1,56 @@
+		<!-- HEADER -->
+	<{if ($categoryup eq $v_wiki_category_id) or ($category eq $v_search_category_id) or ($category eq 73) or ($id eq 646) or ($category eq 30 and $id) or ($categoryup eq 30) or ($category eq 69) or ($categoryup eq 69) or ($categoryup eq 75) or ($id eq 791) or ($id eq 831) }> <{* wiki *}>
+		<header id="header" class="header-light header-navigation-dark">
+	<{else}>
+		<header id="header" class="header-transparent header-dark header-navigation-light">
+	<{/if}>
+			<div id="header-wrap">
+				<div class="container">
+					<!--LOGO-->
+					<div id="logo">
+						<a href="https://www.ccboot.com/" class="logo" data-dark-logo="images/logo-light90.png">
+							<img src="images/logo90.png" alt="Polo Logo">
+						</a>
+					</div>
+					<!--END: LOGO-->
+
+					<!--MOBILE MENU -->
+					<div class="nav-main-menu-responsive">
+						<button class="lines-button x" type="button" data-toggle="collapse" data-target=".main-menu-collapse">
+							<span class="lines"></span>
+						</button>
+					</div>
+					<!--END: MOBILE MENU -->
+
+					<!--NAVIGATION-->
+					<div class="navbar-collapse collapse main-menu-collapse navigation-wrap">
+						<div class="container">
+							<nav id="mainMenu" class="main-menu mega-menu">
+								<ul class="main-menu nav nav-pills">
+									<li><a href="https://www.ccboot.com/">Home</a></li>
+									<li><a href="https://www.icafecloud.com/" target="_blank">iCafeCloud</a></li>
+									<li class="dropdown"><a href="features.htm">Features <i class="fa fa-angle-down"></i></a>
+										<ul class="dropdown-menu">
+											<li><a href="https://www.icafecloud.com/">Diskless for Game Centers</a></li>
+											<li><a href="thin-client-solution-for-education.htm">Diskless for Education</a></li>
+											<li><a href="thin-client-solution-for-enterprise.htm">Diskless for Enterprise</a></li>
+											<li><a href="thin-client-software.htm">Diskless for Thin Client</a></li>
+											<li><a href="render-farm.htm">Diskless for Render Farm</a></li>
+										</ul>	
+									</li>
+									<li><a href="purchase.htm">Pricing</a></li>
+									<li><a href="download.htm">Trial</a></li>
+									<li><a href="case.htm">Cases</a></li>
+									<li><a href="wikis.htm">Wiki</a></li>
+									<li><a href="contact.htm">Contact</a></li>
+									<li><a href="logo.htm">Resources</a></li>
+									<!--li><a href="hr-developer.htm">Jobs</a></li-->
+								</ul>
+							</nav>
+						</div>
+					</div>
+					<!--END: NAVIGATION-->
+				</div>
+			</div>
+		</header>
+		<!-- END: HEADER -->

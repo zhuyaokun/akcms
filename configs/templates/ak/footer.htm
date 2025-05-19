@@ -1,0 +1,44 @@
+		<!-- FOOTER -->
+		<footer class="background-dark text-grey" id="footer">
+			<div class="footer-content">
+				<div class="container">
+					<div class="row text-center">
+						<img alt="" src="images/logo-light75.png">
+						<div class="copyright-text text-center"> &copy; 2000-<{$smarty.now|date_format:"%Y"}> <a target="_blank" href="https://www.youngzsoft.net/">Youngzsoft</a>. All Rights Reserved. <a href="https://www.youngzsoft.net/privacy.htm" target="_blank">Privacy policy</a></div>
+						<div class="social-icons center">
+							<ul>
+								<li><a href="https://www.facebook.com/ccboot" target="_blank"><i class="fa fa-facebook"></i></a></li>
+								<li><a href="https://www.youtube.com/ccbootcloud" target="_blank"><i class="fa fa-youtube"></i></a></li>
+								<li><a href="https://forum.icafeman.com/" target="_blank"><i class="fa fa-users"></i></a></li>
+							</ul>
+						</div>
+					</div>
+				</div>
+			</div>
+		</footer>				
+		<!-- END: FOOTER -->
+		<!-- Img Zoom -->
+		<div id="outdiv" style="position:fixed;top:0;left:0;background:rgba(0,0,0,0.7);z-index:4;width:100%;height:100%;display:none;">
+			<div id="indiv" style="position:absolute;">
+				<img id="bigimg" src="" style="border:5px solid #fff;">
+			</div>
+		</div>
+		<!-- End Img Zoom -->
+		<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.css" />
+<script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.0/cookieconsent.min.js"></script>
+<script>
+window.addEventListener("load", function(){
+window.cookieconsent.initialise({
+  "palette": {
+    "popup": {
+      "background": "#000"
+    },
+    "button": {
+      "background": "#f1d600"
+    }
+  },
+  "content": {
+    "href": "https://www.youngzsoft.net/privacy.htm"
+  }
+})});
+</script>

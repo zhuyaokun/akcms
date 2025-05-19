@@ -30,16 +30,8 @@ function obj2array($obj) {
 }
 
 function aklog($log, $file) {
-	$log = $log."\n";
-	if(function_exists('error_log')) {
-		error_log($log, 3, $file);
-	} else {
-		if(!$fp = @fopen($file, 'a')) return false;
-		flock($fp, LOCK_EX + LOCK_NB);
-		fwrite($fp, $log);
-		flock($fp, LOCK_UN);
-		return fclose($fp);
-	}
+	$log = $log;
+	error_log($log);
 }
 
 function writetofile($text, $filename) {
@@ -365,7 +357,7 @@ function displaytemplate($template) {
 	if(file_exists(AK_ROOT.'configs/templates/'.$template)) $templatefilename = $template = AK_ROOT.'configs/templates/'.$template;
 	$smarty->template_dir = CORE_ROOT."templates";
 	$smarty->assign('lan', $lan);
-	if(!isset($templatefilename)) $templatefilename = $smarty->template_dir.'/'.$template;
+	if(!isset($templatefilename)) $templatefilename = $smarty->template_dir[0].'/'.$template;
 	$smarty->compile_dir = AK_ROOT."cache/templates";
 	$smarty->config_dir = AK_ROOT."configs/";
 	$smarty->cache_dir = AK_ROOT."cache/";

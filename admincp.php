@@ -799,7 +799,7 @@ if(!isset($get_action) || $get_action == 'custom' || $get_action == 'admin') {
 		$section = isset($sections[$item['section']]) ? $sections[$item['section']]['section'] : '-';
 		$title = htmltitle(ak_htmlspecialchars($item['title']), $item['titlecolor'], $item['titlestyle']);
 		$draft = '';
-		if($item['draft']) $draft = '['.green("{$lan['draft']}").']'."[<a id={$item['id']} class='release' href='#'>".green($lan['release']).'</a>]';
+		if(isset($item['draft']) && $item['draft']) $draft = '['.green("{$lan['draft']}").']'."[<a id={$item['id']} class='release' href='#'>".green($lan['release']).'</a>]';
 		$str_moduleitems = '';
 		foreach($fields as $key => $field) {
 			if($field <= 0) continue;
